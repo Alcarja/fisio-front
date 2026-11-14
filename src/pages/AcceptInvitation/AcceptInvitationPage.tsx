@@ -116,7 +116,12 @@ function SignUpStep({ invitation }: { invitation: PublicInvitation }) {
   // On success the user is logged in and the page moves to the accept step
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    signUp.mutate({ name: name.trim(), email: invitation.email, password });
+    signUp.mutate({
+      name: name.trim(),
+      email: invitation.email,
+      password,
+      invitationId: invitation.id,
+    });
   };
 
   return (

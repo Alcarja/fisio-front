@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import type { NewMember } from "@/adapters/api";
 import { useAddMember } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ const roleHints: Record<AssignableClinicRole, string> = {
 const empty = { email: "", name: "", role: "physio" as AssignableClinicRole };
 
 // "Añadir miembro" button + popup. Adds someone to the ACTIVE clinic's team:
-// an existing account is linked by email, otherwise a new one is created
+// a new email gets an account right away; an existing account gets an invitation
 export default function AddMemberDialog() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
@@ -54,7 +55,16 @@ export default function AddMemberDialog() {
       ...(form.name.trim() && { name: form.name.trim() }),
       role: form.role,
     };
-    addMember.mutate(member, { onSuccess: () => handleOpenChange(false) });
+    addMember.mutate(member, {
+      onSuccess: (result) => {
+        toast.success(
+          result.invited
+            ? `${member.email} ya tenía cuenta: le hemos enviado una invitación`
+            : `${member.email} añadido al equipo`,
+        );
+        handleOpenChange(false);
+      },
+    });
   };
 
   return (
@@ -86,7 +96,7 @@ export default function AddMemberDialog() {
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
               <p className="text-xs text-muted-foreground">
-                Si ya tiene cuenta en Kineflow, la añadiremos con esa cuenta.
+                Si ya tiene cuenta en Kineflow, le enviaremos una invitación para que la acepte.
               </p>
             </div>
 

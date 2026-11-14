@@ -21,6 +21,10 @@ type Props = {
 // "⋯" menu on a team member's row: change role, change password, remove.
 // The Equipo page only shows it for staff (not the owner, not yourself)
 export default function MemberActions({ member, clinicName }: Props) {
+  // Only physios' and receptionists' passwords can be set by the clinic
+  // (same rule as PASSWORD_MANAGEABLE_ROLES in back/src/controllers/team.controller.ts)
+  const canSetPassword = member.role === "physio" || member.role === "receptionist";
+
   // Which popup is open
   const [dialog, setDialog] = useState<"role" | "password" | "remove" | null>(null);
   const onOpenChange = (open: boolean) => {
@@ -44,9 +48,11 @@ export default function MemberActions({ member, clinicName }: Props) {
           <DropdownMenuItem className="gap-2 rounded-lg" onSelect={() => setDialog("role")}>
             <UserCog /> Cambiar rol
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 rounded-lg" onSelect={() => setDialog("password")}>
-            <KeyRound /> Cambiar contraseña
-          </DropdownMenuItem>
+          {canSetPassword && (
+            <DropdownMenuItem className="gap-2 rounded-lg" onSelect={() => setDialog("password")}>
+              <KeyRound /> Cambiar contraseña
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator className="my-1.5" />
           <DropdownMenuItem
             variant="destructive"

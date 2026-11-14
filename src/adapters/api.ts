@@ -82,11 +82,13 @@ export type SignUpData = {
   name: string;
   email: string;
   password: string;
+  // Accounts can only be created from an invitation (back/src/auth.ts)
+  invitationId: string;
 };
 
 // Better Auth: creates the account and logs in (session cookie)
-export const signUp = async (data: SignUpData): Promise<unknown> => {
-  return stpApi.post("/api/auth/sign-up/email", data);
+export const signUp = async ({ invitationId, ...data }: SignUpData): Promise<unknown> => {
+  return stpApi.post("/api/auth/sign-up/email", data, { "x-invitation-id": invitationId });
 };
 
 export const signOut = async (): Promise<unknown> => {
@@ -282,7 +284,13 @@ export type NewMember = {
   role: Exclude<ClinicRole, "owner">;
 };
 
-export const addMember = async (member: NewMember): Promise<unknown> => {
+// New email: the account is created and joins now (invited: false).
+// Existing account: they get an invitation to accept (invited: true)
+export type AddMemberResult =
+  | { invited: false; member: ClinicMember }
+  | { invited: true; invitation: ClinicInvitation };
+
+export const addMember = async (member: NewMember): Promise<AddMemberResult> => {
   return stpApi.post("/api/clinic/team/newMember", member);
 };
 
