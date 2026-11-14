@@ -26,9 +26,9 @@ export default function Footer() {
     <footer className="mt-24 border-t">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-[2fr_1fr_1fr]">
         <div className="flex flex-col gap-4">
-          <Logo />
+          <Logo animated={false} />
           <p className="max-w-xs text-sm text-muted-foreground">
-            La forma tranquila de gestionar una clínica de fisioterapia.
+            Gestiona tu clínica de fisioterapia y deja que todo fluya.
           </p>
         </div>
         {columns.map((column) => (
@@ -50,7 +50,7 @@ export default function Footer() {
         ))}
       </div>
       <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 border-t px-5 py-6 text-xs text-muted-foreground sm:flex-row">
-        <span>© {year} Fisio</span>
+        <span>© {year} Kineflow</span>
         <span>Hecho para fisioterapeutas</span>
       </div>
     </footer>

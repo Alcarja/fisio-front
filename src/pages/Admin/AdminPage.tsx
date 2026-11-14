@@ -33,7 +33,7 @@ export default function AdminPage() {
   const firstName = me.user.name.split(" ")[0];
   const subtitle =
     me.user.role === "superadmin"
-      ? "Gestionas la plataforma Fisio."
+      ? "Gestionas la plataforma Kineflow."
       : me.activeClinic
         ? `${clinicRoleLabels[me.activeClinic.role]} en ${me.activeClinic.clinicName}.`
         : "";

@@ -20,7 +20,7 @@ export default function ClinicsPage() {
             Clínicas
           </h1>
           <p className="text-muted-foreground">
-            Todas las clínicas registradas en Fisio.
+            Todas las clínicas registradas en Kineflow.
           </p>
         </div>
         <CreateClinicDialog />

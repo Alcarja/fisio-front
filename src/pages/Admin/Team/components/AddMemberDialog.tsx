@@ -86,7 +86,7 @@ export default function AddMemberDialog() {
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
               <p className="text-xs text-muted-foreground">
-                Si ya tiene cuenta en Fisio, la añadiremos con esa cuenta.
+                Si ya tiene cuenta en Kineflow, la añadiremos con esa cuenta.
               </p>
             </div>
 

@@ -115,7 +115,7 @@ export function RemindPreview() {
           <MessageCircle className="size-4 text-primary-foreground" />
         </span>
         <div className="flex flex-col">
-          <span className="text-sm font-medium">Clínica Fisio</span>
+          <span className="text-sm font-medium">Clínica Movimiento</span>
           <span className="text-[11px] text-muted-foreground">Mensaje automático</span>
         </div>
       </div>

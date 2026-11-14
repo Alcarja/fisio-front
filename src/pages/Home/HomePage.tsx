@@ -52,7 +52,7 @@ export default function HomePage() {
             className="mt-8 max-w-xl text-lg text-muted-foreground text-pretty motion-safe:animate-rise md:text-xl"
             style={{ animationDelay: "160ms" }}
           >
-            Fisio reúne la agenda de tu equipo, las historias clínicas y los
+            Kineflow reúne la agenda de tu equipo, las historias clínicas y los
             recordatorios en un solo lugar, para que cada hora sea para tus pacientes.
           </p>
 

@@ -11,7 +11,7 @@ export default function AdminNavbar() {
     <header className="sticky top-0 z-50 px-4 pt-3">
       <nav className="flex items-center justify-between gap-3 rounded-full border bg-background/75 py-2 pr-2 pl-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <Link to={paths.admin} aria-label="Panel de Fisio">
+          <Link to={paths.admin} aria-label="Panel de Kineflow">
             <Logo />
           </Link>
           <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">

@@ -41,7 +41,7 @@ export default function SelectClinicPage() {
 
   return (
     <div className="flex min-h-svh flex-col px-5 py-6 sm:px-10">
-      <Link to={paths.home} aria-label="Inicio de Fisio" className="w-fit">
+      <Link to={paths.home} aria-label="Inicio de Kineflow" className="w-fit">
         <Logo />
       </Link>
 

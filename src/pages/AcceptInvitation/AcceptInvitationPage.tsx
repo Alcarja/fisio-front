@@ -73,7 +73,7 @@ export default function AcceptInvitationPage() {
   return (
     <div className="flex min-h-svh flex-col px-5 py-6 sm:px-10">
       <div className="flex items-center justify-between">
-        <Link to={paths.home} aria-label="Inicio de Fisio">
+        <Link to={paths.home} aria-label="Inicio de Kineflow">
           <Logo />
         </Link>
         <Link

@@ -25,7 +25,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 px-4 pt-3">
       <nav className="mx-auto flex max-w-6xl items-center justify-between rounded-full border bg-background/75 py-2 pr-2 pl-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)] backdrop-blur-xl">
-        <Link to={paths.home} aria-label="Inicio de Fisio" onClick={() => setOpen(false)}>
+        <Link to={paths.home} aria-label="Inicio de Kineflow" onClick={() => setOpen(false)}>
           <Logo />
         </Link>
 

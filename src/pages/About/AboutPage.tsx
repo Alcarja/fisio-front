@@ -55,7 +55,7 @@ export default function AboutPage() {
           aria-hidden
         />
         <div className="mx-auto max-w-6xl px-5 pt-16 md:pt-24">
-          <span className="text-sm font-medium text-coral motion-safe:animate-rise">Sobre Fisio</span>
+          <span className="text-sm font-medium text-coral motion-safe:animate-rise">Sobre Kineflow</span>
           <h1
             className="mt-6 max-w-5xl font-display text-6xl leading-[0.95] tracking-tight text-balance motion-safe:animate-rise sm:text-7xl md:text-8xl"
             style={{ animationDelay: "80ms" }}
@@ -86,7 +86,7 @@ export default function AboutPage() {
             Estamos creando la herramienta que nos gustaría que todo fisio tuviera desde el primer día.
           </blockquote>
           <p className="text-muted-foreground">
-            Fisio reúne la agenda, las historias clínicas y la gestión de la
+            Kineflow reúne la agenda, las historias clínicas y la gestión de la
             clínica en un solo lugar, diseñado con fisioterapeutas y no solo
             para ellos.
           </p>
