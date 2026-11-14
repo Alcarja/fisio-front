@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarDays,
+  ChartColumn,
   LayoutDashboard,
   Settings,
   Users,
@@ -70,6 +71,7 @@ const sections: SidebarSection[] = [
     access: teamAccess,
     items: [
       { label: "Equipo", icon: Users, to: paths.adminTeam },
+      { label: "Informes", icon: ChartColumn, to: paths.adminReports },
       { label: "Configuración", icon: Settings, to: paths.adminSettings },
     ],
   },

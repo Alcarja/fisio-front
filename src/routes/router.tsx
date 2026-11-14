@@ -9,6 +9,7 @@ import SelectClinicPage from "@/pages/SelectClinic/SelectClinicPage";
 import { bookingsAccess, panelAccess, superadminAccess, teamAccess } from "@/lib/roles";
 import BookingsPage from "@/pages/Admin/Bookings/BookingsPage";
 import TeamPage from "@/pages/Admin/Team/TeamPage";
+import ReportsPage from "@/pages/Admin/Reports/ReportsPage";
 import SettingsLayout from "@/pages/Admin/Settings/SettingsLayout";
 import SchedulePage from "@/pages/Admin/Settings/Schedule/SchedulePage";
 import RoomsPage from "@/pages/Admin/Settings/Rooms/RoomsPage";
@@ -85,6 +86,7 @@ export const router = createBrowserRouter([
         ),
         children: [
           { path: paths.adminTeam, element: <TeamPage /> },
+          { path: paths.adminReports, element: <ReportsPage /> },
           // Header + tabs, and the chosen section inside it
           {
             path: paths.adminSettings,

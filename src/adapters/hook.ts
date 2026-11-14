@@ -322,3 +322,14 @@ const useAppointmentsMutation = <TVariables, TResult>(
 export const useCreateAppointment = () => useAppointmentsMutation(api.createAppointment);
 export const useUpdateAppointment = () => useAppointmentsMutation(api.updateAppointment);
 export const useDeleteAppointment = () => useAppointmentsMutation(api.deleteAppointment);
+
+//Reports (owners and admins of the active clinic)
+// month: "YYYY-MM". While the next month loads, the previous one stays on screen
+export const useMonthlyReport = (activeClinicId: string | undefined, month: string) => {
+  return useQuery({
+    queryKey: ["monthlyReport", activeClinicId, month],
+    queryFn: () => api.getMonthlyReport(month),
+    enabled: !!activeClinicId,
+    placeholderData: keepPreviousData,
+  });
+};

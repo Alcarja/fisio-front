@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  ChartColumn,
   Settings,
   Users,
   type LucideIcon,
@@ -61,6 +62,12 @@ export default function AdminPage() {
       title: "Equipo",
       description: "Gestiona el personal de tu clínica y sus roles.",
       to: paths.adminTeam,
+    });
+    shortcuts.push({
+      icon: ChartColumn,
+      title: "Informes",
+      description: "Las reservas del mes por servicio y por fisio.",
+      to: paths.adminReports,
     });
     shortcuts.push({
       icon: Settings,

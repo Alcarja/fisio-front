@@ -638,3 +638,33 @@ export const updateAppointment = async ({
 export const deleteAppointment = async (id: string): Promise<void> => {
   await stpApi.delete(`${APPOINTMENTS_PATH}/${encodeURIComponent(id)}`);
 };
+
+//Reports (Informes). Owners and admins of the active clinic
+
+// One physio × service pair of the month. Every total of the report
+// (per service, per physio, the whole clinic) is the sum of these cells
+export type MonthlyReportCell = {
+  physioId: string;
+  serviceId: string;
+  appointments: number; // not cancelled
+  minutes: number; // session time (ends_at - starts_at) of those appointments, no buffer
+  patients: number; // patient places: a group session counts each patient
+  noShows: number; // status "no_show"
+  cancelled: number; // status "cancelled" (not in the numbers above)
+};
+
+export type MonthlyReport = {
+  month: string; // "2026-11", the month counted (this month if none was asked)
+  timezone: string; // the month is counted in the clinic's local time
+  // Active services and the clinic's professionals (owners, admins, physios),
+  // also those with no appointments that month. Inactive services and former
+  // members with appointments that month are included too
+  services: Pick<Service, "id" | "name" | "color">[];
+  professionals: Pick<CalendarProfessional, "userId" | "name" | "image">[];
+  cells: MonthlyReportCell[]; // only pairs with something to count
+};
+
+// GET /clinic/reports/monthly?month=YYYY-MM
+export const getMonthlyReport = async (month: string): Promise<MonthlyReport> => {
+  return stpApi.get("/api/clinic/reports/monthly", { params: { month } });
+};
