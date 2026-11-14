@@ -31,14 +31,8 @@ export type Me = {
   activeClinic: Membership | null;
 };
 
-export type ProfileUpdate = {
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-};
-
 export const getMe = async (): Promise<Me> => {
-  return stpApi.get("/me");
+  return stpApi.get("/api/me");
 };
 
 export const setActiveClinic = async (
@@ -47,10 +41,6 @@ export const setActiveClinic = async (
   return stpApi.post("/api/auth/organization/set-active", {
     organizationId: clinicId,
   });
-};
-
-export const updateMe = async (updates: ProfileUpdate): Promise<Me> => {
-  return stpApi.patch("/api/users/me", updates);
 };
 
 //Auth
@@ -132,7 +122,7 @@ export const getPublicInvitation = async (
   invitationId: string,
 ): Promise<PublicInvitation> => {
   const { invitation } = await stpApi.get(
-    `/invitations/${encodeURIComponent(invitationId)}`,
+    `/api/invitations/${encodeURIComponent(invitationId)}`,
   );
   return invitation;
 };
@@ -157,7 +147,7 @@ export type Clinic = {
 };
 
 export const getAllClinics = async (): Promise<Clinic[]> => {
-  const { clinics } = await stpApi.get("/admin/clinics");
+  const { clinics } = await stpApi.get("/api/admin/clinics");
   return clinics;
 };
 
@@ -169,7 +159,7 @@ export type NewClinic = {
 };
 
 export const createClinic = async (body: NewClinic): Promise<Clinic> => {
-  const { clinic } = await stpApi.post("/admin/clinics", body);
+  const { clinic } = await stpApi.post("/api/admin/clinics", body);
   return clinic;
 };
 
@@ -200,7 +190,7 @@ export type ClinicDetails = Clinic & {
 type InvitationRef = { clinicId: string; invitationId: string };
 
 const invitationPath = ({ clinicId, invitationId }: InvitationRef) =>
-  `/admin/clinics/${encodeURIComponent(clinicId)}/invitations/${encodeURIComponent(invitationId)}`;
+  `/api/admin/clinics/${encodeURIComponent(clinicId)}/invitations/${encodeURIComponent(invitationId)}`;
 
 // POST /admin/clinics/:clinicId/invitations -> { invitation }
 export const createInvitation = async ({
@@ -213,7 +203,7 @@ export const createInvitation = async ({
   role: ClinicRole;
 }): Promise<ClinicInvitation> => {
   const { invitation } = await stpApi.post(
-    `/admin/clinics/${encodeURIComponent(clinicId)}/invitations`,
+    `/api/admin/clinics/${encodeURIComponent(clinicId)}/invitations`,
     { email, role },
   );
   return invitation;
@@ -247,7 +237,7 @@ export const updateMemberRoles = async ({
   changes: MemberRoleChange[];
 }): Promise<ClinicMember[]> => {
   const { members } = await stpApi.patch(
-    `/admin/clinics/${encodeURIComponent(clinicId)}/members/roles`,
+    `/api/admin/clinics/${encodeURIComponent(clinicId)}/members/roles`,
     { changes },
   );
   return members;
@@ -259,14 +249,14 @@ export type ClinicTeam = {
 };
 
 export const getTeam = async (): Promise<ClinicTeam> => {
-  return stpApi.get("/clinic/team");
+  return stpApi.get("/api/clinic/team");
 };
 
 export const getClinicById = async (
   clinicId: string,
 ): Promise<ClinicDetails> => {
   const { clinic } = await stpApi.get(
-    `/admin/clinics/${encodeURIComponent(clinicId)}`,
+    `/api/admin/clinics/${encodeURIComponent(clinicId)}`,
   );
   return clinic;
 };
@@ -279,7 +269,7 @@ export const updateClinic = async ({
   changes: ClinicUpdate;
 }): Promise<Clinic> => {
   const { clinic } = await stpApi.patch(
-    `/admin/clinics/${encodeURIComponent(clinicId)}`,
+    `/api/admin/clinics/${encodeURIComponent(clinicId)}`,
     changes,
   );
   return clinic;
@@ -293,11 +283,11 @@ export type NewMember = {
 };
 
 export const addMember = async (member: NewMember): Promise<unknown> => {
-  return stpApi.post("/clinic/team/newMember", member);
+  return stpApi.post("/api/clinic/team/newMember", member);
 };
 
 const teamMemberPath = (memberId: string) =>
-  `/clinic/team/members/${encodeURIComponent(memberId)}`;
+  `/api/clinic/team/members/${encodeURIComponent(memberId)}`;
 
 export type TeamMemberRoleUpdate = {
   memberId: string;
@@ -369,7 +359,7 @@ export type ClinicSchedule = {
 };
 
 // All under /clinic/settings/schedule. The clinic is the session's active one
-const SCHEDULE_PATH = "/clinic/settings/schedule";
+const SCHEDULE_PATH = "/api/clinic/settings/schedule";
 
 // GET -> { timezone, weeklyHours, exceptions }
 export const getClinicSchedule = async (): Promise<ClinicSchedule> => {
@@ -427,7 +417,7 @@ export type RoomInput = {
   description: string | null;
 };
 
-const ROOMS_PATH = "/clinic/settings/rooms";
+const ROOMS_PATH = "/api/clinic/settings/rooms";
 
 // GET -> { rooms, roomTypes }
 export const getClinicRooms = async (): Promise<ClinicRooms> => {
@@ -492,7 +482,7 @@ export type Service = {
 
 export type ServiceInput = Omit<Service, "id" | "roomTypeName" | "isActive">;
 
-const SERVICES_PATH = "/clinic/settings/services";
+const SERVICES_PATH = "/api/clinic/settings/services";
 
 // GET -> { services }
 export const getClinicServices = async (): Promise<Service[]> => {
@@ -558,7 +548,7 @@ export const getCalendarConfig = async (range: {
   from: string;
   to: string;
 }): Promise<CalendarConfig> => {
-  return stpApi.get("/clinic/calendar/config", { params: range });
+  return stpApi.get("/api/clinic/calendar/config", { params: range });
 };
 
 //Appointments (Reservas). Every role of the active clinic; deleting: owners and admins
@@ -609,7 +599,7 @@ export type AppointmentChanges = Partial<Omit<NewAppointment, "status">> & {
   cancellationReason?: string;
 };
 
-const APPOINTMENTS_PATH = "/clinic/calendar/appointments";
+const APPOINTMENTS_PATH = "/api/clinic/calendar/appointments";
 
 // GET ?from&to (both days included) -> { appointments }
 export const getAppointments = async (range: { from: string; to: string }): Promise<Appointment[]> => {
