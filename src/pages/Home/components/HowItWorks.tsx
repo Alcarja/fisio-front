@@ -1,0 +1,126 @@
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { RecordPreview, RecoverPreview, RemindPreview, SchedulePreview } from "./previews";
+
+const STEP_DURATION = 7000; // ms each step stays on screen
+
+const steps = [
+  {
+    verb: "Organiza",
+    title: "Todo el equipo en una sola agenda",
+    description:
+      "Cada fisio, sala y tratamiento, uno al lado del otro. Detecta huecos, arrastra para cambiar citas y olvídate de las reservas duplicadas.",
+    Preview: SchedulePreview,
+  },
+  {
+    verb: "Registra",
+    title: "Notas que acompañan al paciente",
+    description:
+      "Historia clínica, notas de cada sesión y escala de dolor en una sola línea de tiempo, para que cualquiera del equipo sepa cómo terminó la última sesión.",
+    Preview: RecordPreview,
+  },
+  {
+    verb: "Recuerda",
+    title: "Menos huecos vacíos",
+    description:
+      "Tus pacientes reciben un recordatorio el día antes y confirman con una sola respuesta. Las cancelaciones pasan directamente a tu lista de espera.",
+    Preview: RemindPreview,
+  },
+  {
+    verb: "Recupera",
+    title: "El tratamiento sigue en casa",
+    description:
+      "Envía planes de ejercicios con vídeos y comprueba quién los sigue entre sesiones.",
+    Preview: RecoverPreview,
+  },
+];
+
+export default function HowItWorks() {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const { Preview } = steps[active];
+
+  return (
+    <section
+      id="how"
+      className="mx-auto max-w-6xl scroll-mt-24 px-5"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="flex max-w-2xl flex-col gap-4">
+        <span className="text-sm font-medium text-coral">Cómo funciona</span>
+        <h2 className="font-display text-5xl leading-[1.02] tracking-tight text-balance md:text-6xl">
+          De la primera visita al alta.
+        </h2>
+      </div>
+
+      <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+        <ol className="flex flex-col">
+          {steps.map((step, i) => {
+            const isActive = i === active;
+            return (
+              <li key={step.verb} className="border-t last:border-b">
+                <button
+                  type="button"
+                  onClick={() => setActive(i)}
+                  aria-current={isActive}
+                  className="group relative flex w-full flex-col gap-2 py-6 text-left"
+                >
+                  <span className="flex items-baseline gap-4">
+                    <span className="font-display text-lg text-muted-foreground tabular-nums">
+                      0{i + 1}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-display text-3xl tracking-tight transition-colors md:text-4xl",
+                        isActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-foreground",
+                      )}
+                    >
+                      {step.verb}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "grid pl-9 transition-all duration-500",
+                      isActive ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                    )}
+                  >
+                    <span className="overflow-hidden">
+                      <span className="block font-medium">{step.title}</span>
+                      <span className="mt-1 block text-muted-foreground">{step.description}</span>
+                    </span>
+                  </span>
+
+                  {/* Progress bar: when it fills up, move to the next step */}
+                  {isActive && (
+                    <span className="absolute inset-x-0 -top-px h-px origin-left bg-foreground motion-safe:animate-fill motion-reduce:hidden"
+                      style={{
+                        animationDuration: `${STEP_DURATION}ms`,
+                        animationPlayState: paused ? "paused" : "running",
+                      }}
+                      onAnimationEnd={() => setActive((a) => (a + 1) % steps.length)}
+                    />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="relative flex min-h-[30rem] items-center justify-center overflow-hidden rounded-[2rem] bg-secondary p-6 sm:p-10">
+          <div
+            className="pointer-events-none absolute -top-20 -right-20 size-72 rounded-full bg-sand blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -bottom-24 -left-16 size-72 rounded-full bg-sage blur-3xl"
+            aria-hidden
+          />
+          <div key={active} className="relative flex w-full justify-center motion-safe:animate-rise" aria-hidden>
+            <Preview />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
