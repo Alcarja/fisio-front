@@ -138,7 +138,7 @@ export default function ClinicMembers({ clinicId, members, invitations }: Props)
                   className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0"
                 >
                   <MemberAvatar member={member} />
-                  <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] flex-col sm:basis-0">
                     <span className="flex items-center gap-2 truncate text-sm font-medium">
                       {member.name}
                       {changed && (
@@ -161,7 +161,7 @@ export default function ClinicMembers({ clinicId, members, invitations }: Props)
 
                   {/* Owner is changed with "Cambiar propietario", not here */}
                   {role === "owner" ? (
-                    <Badge variant="secondary" className="h-8 w-40 justify-center">
+                    <Badge variant="secondary" className="ml-12 h-8 w-40 justify-center sm:ml-0">
                       {roleLabels.owner}
                     </Badge>
                   ) : (
@@ -177,7 +177,7 @@ export default function ClinicMembers({ clinicId, members, invitations }: Props)
                           setRole(member.memberId, e.target.value as ClinicRole)
                         }
                         // className goes on the wrapper, so target the <select> inside
-                        className={cn("w-40", changed && "[&>select]:border-coral")}
+                        className={cn("ml-12 w-40 sm:ml-0", changed && "[&>select]:border-coral")}
                       >
                         {assignableRoles.map((r) => (
                           <NativeSelectOption key={r} value={r}>

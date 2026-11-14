@@ -113,7 +113,7 @@ export default function TeamPage() {
                       className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0"
                     >
                       <MemberAvatar member={member} />
-                      <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] flex-col sm:basis-0">
                         <span className="flex items-center gap-2 truncate text-sm font-medium">
                           {member.name}
                           {isMe && (
@@ -129,22 +129,25 @@ export default function TeamPage() {
                       <span className="hidden text-sm text-muted-foreground lg:block">
                         Desde {dateFormat.format(new Date(member.joinedAt))}
                       </span>
-                      <Badge
-                        variant={member.role === "owner" ? "secondary" : "outline"}
-                        className="w-32 justify-center"
-                      >
-                        {clinicRoleLabels[member.role]}
-                      </Badge>
-                      {/* Staff only: the owner changes by invitation, and you
-                          can't change or remove yourself here */}
-                      {member.role !== "owner" && !isMe ? (
-                        <MemberActions
-                          member={member}
-                          clinicName={activeClinic?.clinicName ?? "la clínica"}
-                        />
-                      ) : (
-                        <span className="size-9 shrink-0" aria-hidden />
-                      )}
+                      {/* Phones: role and actions on a second line under the name */}
+                      <div className="ml-12 flex flex-1 items-center justify-between gap-3 sm:ml-0 sm:flex-none">
+                        <Badge
+                          variant={member.role === "owner" ? "secondary" : "outline"}
+                          className="w-32 justify-center"
+                        >
+                          {clinicRoleLabels[member.role]}
+                        </Badge>
+                        {/* Staff only: the owner changes by invitation, and you
+                            can't change or remove yourself here */}
+                        {member.role !== "owner" && !isMe ? (
+                          <MemberActions
+                            member={member}
+                            clinicName={activeClinic?.clinicName ?? "la clínica"}
+                          />
+                        ) : (
+                          <span className="size-9 shrink-0" aria-hidden />
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -169,14 +172,14 @@ export default function TeamPage() {
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
                         <Mail className="size-4 text-muted-foreground" />
                       </span>
-                      <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] flex-col sm:basis-0">
                         <span className="truncate text-sm font-medium">{invitation.email}</span>
                         <span className="text-xs text-muted-foreground">
                           Caduca el {dateFormat.format(new Date(invitation.expiresAt))}
                         </span>
                       </div>
                       {invitation.role && (
-                        <Badge variant="outline" className="w-32 justify-center">
+                        <Badge variant="outline" className="ml-12 w-32 justify-center sm:ml-0">
                           {clinicRoleLabels[invitation.role]}
                         </Badge>
                       )}

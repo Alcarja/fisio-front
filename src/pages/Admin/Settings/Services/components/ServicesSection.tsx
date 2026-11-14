@@ -109,10 +109,10 @@ export default function ServicesSection({ services, roomTypes, rooms }: Props) {
                 aria-hidden
               />
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-center gap-2 truncate text-sm font-medium">
-                  {service.name}
+                <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                  <span className="truncate">{service.name}</span>
                   {!service.isActive && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
                       Inactivo
                     </Badge>
                   )}
@@ -124,14 +124,19 @@ export default function ServicesSection({ services, roomTypes, rooms }: Props) {
                     {service.bufferMinutes > 0 && ` + ${service.bufferMinutes} min limpieza`}
                   </span>
                   <span>{service.roomTypeName ?? "Cualquier sala"}</span>
+                  {service.isGroup && (
+                    <span className="flex items-center gap-1 sm:hidden">
+                      <Users className="size-3.5" /> Grupo · hasta {service.maxPatients}
+                    </span>
+                  )}
                 </span>
               </div>
               {service.isGroup && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="hidden gap-1 sm:inline-flex">
                   <Users className="size-3" /> Grupo · hasta {service.maxPatients}
                 </Badge>
               )}
-              <span className="w-20 text-right text-sm font-medium tabular-nums">
+              <span className="text-right text-sm font-medium tabular-nums sm:w-20">
                 {formatPrice(service.priceCents)}
               </span>
 

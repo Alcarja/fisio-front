@@ -52,11 +52,11 @@ export default function ExceptionsSection({ exceptions }: Props) {
               >
                 <Badge
                   variant={exception.type === "closed" ? "outline" : "secondary"}
-                  className="w-32 justify-center"
+                  className="justify-center sm:w-32"
                 >
                   {exception.type === "closed" ? "Cerrado" : "Horario especial"}
                 </Badge>
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] flex-col sm:basis-0">
                   <span className="text-sm font-medium first-letter:uppercase">
                     {formatDateRange(exception.startDate, exception.endDate)}
                   </span>

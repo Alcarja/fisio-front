@@ -80,7 +80,7 @@ export default function WeeklyHoursSection({ weeklyHours }: Props) {
             return (
               <li
                 key={day.value}
-                className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[9rem_1fr]"
+                className="grid grid-cols-1 gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[9rem_minmax(0,1fr)]"
               >
                 <div className="flex items-center gap-2 sm:h-9">
                   <Checkbox

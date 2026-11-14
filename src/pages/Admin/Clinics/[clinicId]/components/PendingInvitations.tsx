@@ -89,7 +89,7 @@ export default function PendingInvitations({ clinicId, invitations }: Props) {
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
                 <Mail className="size-4 text-muted-foreground" />
               </span>
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 flex-1 basis-[calc(100%-3rem)] flex-col sm:basis-0">
                 <span className="truncate text-sm font-medium">{invitation.email}</span>
                 <span
                   className={
@@ -102,6 +102,9 @@ export default function PendingInvitations({ clinicId, invitations }: Props) {
                 </span>
               </div>
 
+              {/* Phones: role and actions on a second line under the email.
+                  From sm the wrapper disappears and they sit in the row */}
+              <div className="ml-12 flex flex-wrap items-center gap-x-3 gap-y-1 sm:contents">
               {invitation.role && (
                 <Badge variant="outline">{roleLabels[invitation.role]}</Badge>
               )}
@@ -127,6 +130,7 @@ export default function PendingInvitations({ clinicId, invitations }: Props) {
                 >
                   <X /> Cancelar
                 </Button>
+              </div>
               </div>
             </li>
           );

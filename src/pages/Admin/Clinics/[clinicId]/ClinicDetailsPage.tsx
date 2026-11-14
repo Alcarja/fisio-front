@@ -37,7 +37,7 @@ export default function ClinicDetailsPage() {
         <>
           <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-center gap-4">
-              <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-secondary">
+              <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-secondary sm:size-16">
                 {clinic.logo ? (
                   <img
                     src={clinic.logo}
@@ -50,7 +50,7 @@ export default function ClinicDetailsPage() {
               </span>
               <div className="flex min-w-0 flex-col gap-2">
                 <span className="text-sm font-medium text-coral">Clínica</span>
-                <h1 className="font-display text-5xl leading-none tracking-tight md:text-6xl">
+                <h1 className="font-display text-4xl leading-none tracking-tight text-balance break-words sm:text-5xl md:text-6xl">
                   {clinic.name}
                 </h1>
                 <p className="text-muted-foreground">/{clinic.slug}</p>

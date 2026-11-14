@@ -103,10 +103,10 @@ export default function RoomsSection({ rooms, roomTypes }: Props) {
                 <DoorOpen className="size-4 text-primary" />
               </span>
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-center gap-2 truncate text-sm font-medium">
-                  {room.name}
+                <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                  <span className="truncate">{room.name}</span>
                   {!room.isActive && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
                       Inactiva
                     </Badge>
                   )}
@@ -114,8 +114,12 @@ export default function RoomsSection({ rooms, roomTypes }: Props) {
                 <span className="truncate text-sm text-muted-foreground">
                   {[room.roomTypeName ?? "Sin tipo", room.description].filter(Boolean).join(" · ")}
                 </span>
+                <span className="flex items-center gap-1 text-sm text-muted-foreground sm:hidden">
+                  <Users className="size-3.5" />
+                  {room.capacity === 1 ? "1 persona" : `${room.capacity} personas`}
+                </span>
               </div>
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <span className="hidden items-center gap-1 text-sm text-muted-foreground sm:flex">
                 <Users className="size-3.5" />
                 {room.capacity === 1 ? "1 persona" : `${room.capacity} personas`}
               </span>

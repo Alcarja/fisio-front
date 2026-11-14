@@ -35,9 +35,9 @@ export default function TimeRangesEditor({ ranges, onChange, label, disabled }: 
             onChange={(e) => update(index, { startTime: e.target.value })}
             aria-label={`${label}, franja ${index + 1}: apertura`}
             disabled={disabled}
-            className="w-28"
+            className="min-w-0 flex-1 sm:w-28 sm:flex-none"
           />
-          <span className="text-muted-foreground">–</span>
+          <span className="shrink-0 text-muted-foreground">–</span>
           <Input
             type="time"
             step={900}
@@ -45,13 +45,13 @@ export default function TimeRangesEditor({ ranges, onChange, label, disabled }: 
             onChange={(e) => update(index, { endTime: e.target.value })}
             aria-label={`${label}, franja ${index + 1}: cierre`}
             disabled={disabled}
-            className="w-28"
+            className="min-w-0 flex-1 sm:w-28 sm:flex-none"
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="size-8 rounded-full text-muted-foreground"
+            className="size-8 shrink-0 rounded-full text-muted-foreground"
             onClick={() => onChange(ranges.filter((_, i) => i !== index))}
             aria-label={`Quitar franja ${index + 1} de ${label}`}
             disabled={disabled}
