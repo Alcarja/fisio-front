@@ -9,6 +9,10 @@ export const paths = {
   adminAccount: "/admin/account",
   // Active clinic's appointments calendar: every clinic role
   adminBookings: "/admin/bookings",
+  // Active clinic's patients (fichas): every clinic role
+  adminPatients: "/admin/patients",
+  // Build real links with generatePath(paths.adminPatient, { patientId })
+  adminPatient: "/admin/patients/:patientId",
   // Active clinic's team: owners and admins only
   adminTeam: "/admin/team",
   // Monthly report of the active clinic's appointments: owners and admins only

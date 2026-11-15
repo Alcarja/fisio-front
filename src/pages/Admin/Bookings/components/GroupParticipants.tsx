@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
-import type { Appointment } from "@/adapters/api";
+import type { Appointment, AppointmentPatientInput } from "@/adapters/api";
 import { useUpdateAppointment } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { patientName } from "../calendarUtils";
+import { patientName, toPatientInput } from "../calendarUtils";
+import PatientFields from "./PatientFields";
+import PatientNameLink from "./PatientNameLink";
 
 type Props = {
   appointment: Appointment;
@@ -15,16 +16,19 @@ type Props = {
   canEdit: boolean;
 };
 
+const emptyPatient: AppointmentPatientInput = { firstName: "", lastName: "" };
+
 // Participants of a group session, inside the appointment's details: add and
 // remove people right there, without opening the full edit form.
 // Each change is saved at once (the backend checks the places again)
 export default function GroupParticipants({ appointment, maxPatients, canEdit }: Props) {
   const [adding, setAdding] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [draft, setDraft] = useState<AppointmentPatientInput>(emptyPatient);
   const update = useUpdateAppointment();
 
-  const current = appointment.patients.map(({ firstName, lastName }) => ({ firstName, lastName }));
+  const current: AppointmentPatientInput[] = appointment.patients.map(toPatientInput);
+  // A ficha, or both names for someone new
+  const draftReady = !!draft.patientId || (!!draft.firstName.trim() && !!draft.lastName.trim());
   const full = current.length >= maxPatients;
 
   const savePatients = (patients: typeof current, success: string) =>
@@ -33,8 +37,7 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
       {
         onSuccess: () => {
           toast.success(success);
-          setFirstName("");
-          setLastName("");
+          setDraft(emptyPatient);
           setAdding(false);
         },
         onError: (error) =>
@@ -44,9 +47,9 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
 
   const add = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) return;
+    if (!draftReady) return;
     savePatients(
-      [...current, { firstName: firstName.trim(), lastName: lastName.trim() }],
+      [...current, { ...draft, firstName: draft.firstName.trim(), lastName: draft.lastName.trim() }],
       "Participante añadido",
     );
   };
@@ -56,7 +59,9 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
       <ul className="flex flex-col gap-1">
         {appointment.patients.map((p, index) => (
           <li key={p.id} className="flex items-center gap-2">
-            <span className="flex-1">{patientName(p)}</span>
+            <span className="flex-1">
+              <PatientNameLink patient={p} />
+            </span>
             {canEdit && current.length > 1 && (
               <Button
                 type="button"
@@ -82,23 +87,14 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
       {canEdit &&
         (adding ? (
           <form onSubmit={add} className="flex flex-col gap-2 rounded-lg border p-2">
-            <div className="flex gap-2">
-              <Input
-                autoFocus
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Nombre"
-                aria-label="Nombre del participante"
-                disabled={update.isPending}
-              />
-              <Input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Apellidos"
-                aria-label="Apellidos del participante"
-                disabled={update.isPending}
-              />
-            </div>
+            <PatientFields
+              autoFocus
+              value={draft}
+              onChange={setDraft}
+              label="Participante nuevo"
+              excludeIds={appointment.patients.flatMap((p) => (p.patientId ? [p.patientId] : []))}
+              disabled={update.isPending}
+            />
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -106,7 +102,10 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
                 size="sm"
                 className="rounded-full"
                 disabled={update.isPending}
-                onClick={() => setAdding(false)}
+                onClick={() => {
+                  setDraft(emptyPatient);
+                  setAdding(false);
+                }}
               >
                 Cancelar
               </Button>
@@ -114,7 +113,7 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
                 type="submit"
                 size="sm"
                 className="rounded-full"
-                disabled={!firstName.trim() || !lastName.trim() || update.isPending}
+                disabled={!draftReady || update.isPending}
               >
                 {update.isPending && <Loader2 className="animate-spin" />}
                 Añadir

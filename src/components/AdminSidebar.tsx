@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router";
 import {
   ArrowLeft,
+  BookUser,
   Building2,
   CreditCard,
   Inbox,
@@ -18,6 +19,7 @@ import { paths } from "@/routes/paths";
 import {
   bookingsAccess,
   hasAccess,
+  patientsAccess,
   superadminAccess,
   teamAccess,
   type AccessRule,
@@ -31,6 +33,9 @@ type SidebarItem = {
   // URL it opens (from paths.ts). Leave it out while the page doesn't exist:
   // the item shows greyed out with a "Pronto" tag
   to?: string;
+  // Who sees this item, on top of its section's rule (e.g. an optional feature
+  // of the clinic). Leave it out to show it to everyone who sees the section
+  access?: AccessRule;
   // Small number next to the label (e.g. requests still to answer). Set in
   // AdminSidebar from live data, not here
   badge?: number;
@@ -63,7 +68,10 @@ const sections: SidebarSection[] = [
   {
     title: "Agenda",
     access: bookingsAccess,
-    items: [{ label: "Reservas", icon: CalendarDays, to: paths.adminBookings }],
+    items: [
+      { label: "Reservas", icon: CalendarDays, to: paths.adminBookings },
+      { label: "Pacientes", icon: BookUser, to: paths.adminPatients, access: patientsAccess },
+    ],
   },
   // Superadmins: all clinics, creating clinics
   {
@@ -165,7 +173,9 @@ export default function AdminSidebar() {
     .filter((s) => !s.access || hasAccess(me, s.access))
     .map((s) => ({
       ...s,
-      items: s.items.map((i) => (i.to && badges[i.to] ? { ...i, badge: badges[i.to] } : i)),
+      items: s.items
+        .filter((i) => !i.access || hasAccess(me, i.access))
+        .map((i) => (i.to && badges[i.to] ? { ...i, badge: badges[i.to] } : i)),
     }));
   const items = visibleSections.flatMap((s) => s.items);
 

@@ -30,10 +30,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { bookingTitle, formatDayLong, patientName, statusLabels } from "../calendarUtils";
+import { bookingTitle, formatDayLong, statusLabels, toPatientInput } from "../calendarUtils";
 import { formatMinutes } from "../../Settings/Services/serviceFormat";
 import AppointmentForm, { type AppointmentFormValues } from "./AppointmentForm";
 import GroupParticipants from "./GroupParticipants";
+import PatientNameLink from "./PatientNameLink";
 
 type Props = {
   appointment: Appointment;
@@ -155,7 +156,7 @@ export default function BookingDetailsDialog({
                 startTime: appointment.startTime,
                 physioId: appointment.physio.userId,
                 roomId: appointment.room.id,
-                patients: appointment.patients.map(({ firstName, lastName }) => ({ firstName, lastName })),
+                patients: appointment.patients.map(toPatientInput),
                 status: status === "cancelled" ? "booked" : status,
                 notes: appointment.notes ?? "",
               }}
@@ -262,7 +263,9 @@ export default function BookingDetailsDialog({
                   ) : (
                     <ul className="flex flex-col gap-0.5">
                       {appointment.patients.map((p) => (
-                        <li key={p.id}>{patientName(p)}</li>
+                        <li key={p.id}>
+                          <PatientNameLink patient={p} />
+                        </li>
                       ))}
                     </ul>
                   )}

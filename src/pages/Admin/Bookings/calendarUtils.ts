@@ -164,6 +164,18 @@ export function layoutOverlaps<T extends { startTime: string; durationMinutes: n
 export const patientName = (p: { firstName: string; lastName: string }) =>
   `${p.firstName} ${p.lastName}`;
 
+// A saved appointment's patient, as sent back when saving the appointment
+// again: keeps the link to their ficha
+export const toPatientInput = (p: {
+  patientId: string | null;
+  firstName: string;
+  lastName: string;
+}) => ({
+  ...(p.patientId ? { patientId: p.patientId } : {}),
+  firstName: p.firstName,
+  lastName: p.lastName,
+});
+
 // "Ana Morales", or "Pilates · 4/6" for group sessions
 export function bookingTitle(appointment: {
   service: { name: string; isGroup: boolean; maxPatients: number };

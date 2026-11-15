@@ -45,18 +45,47 @@ class StpApi {
       throw new Error("Demasiados intentos seguidos. Espera un minuto y vuelve a probar.");
     }
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      // Our API sends { error: { code, message } }, Better Auth sends { message }
-      const message =
-        errorData?.error?.message ??
-        (typeof errorData?.error === "string" ? errorData.error : undefined) ??
-        errorData?.message;
-      throw new Error(message || "Error en la solicitud");
-    }
+    await this.throwIfFailed(res);
 
     const text = await res.text();
     return text ? JSON.parse(text) : null;
+  }
+
+  private async throwIfFailed(res: Response) {
+    if (res.ok) return;
+    const errorData = await res.json().catch(() => ({}));
+    // Our API sends { error: { code, message } }, Better Auth sends { message }
+    const message =
+      errorData?.error?.message ??
+      (typeof errorData?.error === "string" ? errorData.error : undefined) ??
+      errorData?.message;
+    throw new Error(message || "Error en la solicitud");
+  }
+
+  // Sends a file as the request body (with its own type), and details about it
+  // in the URL. Returns the JSON answer
+  async upload(endpoint: string, file: File, params: Record<string, string> = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${this.baseUrl}${endpoint}${query ? `?${query}` : ""}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type },
+      credentials: "include",
+      body: file,
+    }).catch(() => {
+      throw new Error("No se pudo conectar con el servidor");
+    });
+    await this.throwIfFailed(res);
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  // Fetches a file (with the session cookie, so a plain link wouldn't do)
+  async download(endpoint: string): Promise<Blob> {
+    const res = await fetch(`${this.baseUrl}${endpoint}`, { credentials: "include" }).catch(() => {
+      throw new Error("No se pudo conectar con el servidor");
+    });
+    await this.throwIfFailed(res);
+    return res.blob();
   }
 
   get(

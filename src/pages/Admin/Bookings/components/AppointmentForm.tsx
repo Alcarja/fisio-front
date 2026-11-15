@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { Loader2, Plus, X } from "lucide-react";
-import type { AppointmentStatus, CalendarConfig, PatientName } from "@/adapters/api";
+import type { AppointmentPatientInput, AppointmentStatus, CalendarConfig } from "@/adapters/api";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { paths } from "@/routes/paths";
 import { endTime, statusLabels } from "../calendarUtils";
+import PatientFields from "./PatientFields";
 
 export type AppointmentFormValues = {
   serviceId: string;
@@ -16,7 +17,7 @@ export type AppointmentFormValues = {
   startTime: string; // "09:30"
   physioId: string;
   roomId: string;
-  patients: PatientName[];
+  patients: AppointmentPatientInput[];
   status: AppointmentStatus;
   notes: string;
 };
@@ -35,7 +36,7 @@ type Props = {
   onCancel: () => void;
 };
 
-const emptyPatient = (): PatientName => ({ firstName: "", lastName: "" });
+const emptyPatient = (): AppointmentPatientInput => ({ firstName: "", lastName: "" });
 
 // Form to create or edit an appointment. The backend checks the rest
 // (opening hours, room full, physio busy) and explains what failed
@@ -106,15 +107,18 @@ export default function AppointmentForm({
     }));
   };
 
-  const setPatient = (index: number, patch: Partial<PatientName>) =>
+  const setPatient = (index: number, patient: AppointmentPatientInput) =>
     set(
       "patients",
-      values.patients.map((p, i) => (i === index ? { ...p, ...patch } : p)),
+      values.patients.map((p, i) => (i === index ? patient : p)),
     );
 
+  // Rows left empty don't count. Patients with a ficha keep its id; the rest
+  // go by name only, without ficha
   const patients = values.patients
-    .map((p) => ({ firstName: p.firstName.trim(), lastName: p.lastName.trim() }))
+    .map((p) => ({ ...p, firstName: p.firstName.trim(), lastName: p.lastName.trim() }))
     .filter((p) => p.firstName || p.lastName);
+  const fichaIds = patients.flatMap((p) => (p.patientId ? [p.patientId] : []));
   const patientsOk =
     patients.length > 0 && patients.length <= maxPatients && patients.every((p) => p.firstName && p.lastName);
   const valid =
@@ -233,32 +237,27 @@ export default function AppointmentForm({
           {maxPatients > 1 ? `Pacientes (máximo ${maxPatients})` : "Paciente"}
         </Label>
         {values.patients.map((p, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <Input
-              value={p.firstName}
-              onChange={(e) => setPatient(index, { firstName: e.target.value })}
-              placeholder="Nombre"
-              aria-label={`Paciente ${index + 1}: nombre`}
-            />
-            <Input
-              value={p.lastName}
-              onChange={(e) => setPatient(index, { lastName: e.target.value })}
-              placeholder="Apellidos"
-              aria-label={`Paciente ${index + 1}: apellidos`}
-            />
-            {values.patients.length > 1 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="shrink-0 rounded-full text-muted-foreground"
-                onClick={() => set("patients", values.patients.filter((_, i) => i !== index))}
-                aria-label={`Quitar paciente ${index + 1}`}
-              >
-                <X />
-              </Button>
-            )}
-          </div>
+          <PatientFields
+            key={index}
+            value={p}
+            onChange={(patient) => setPatient(index, patient)}
+            label={`Paciente ${index + 1}`}
+            excludeIds={fichaIds}
+            trailing={
+              values.patients.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 rounded-full text-muted-foreground"
+                  onClick={() => set("patients", values.patients.filter((_, i) => i !== index))}
+                  aria-label={`Quitar paciente ${index + 1}`}
+                >
+                  <X />
+                </Button>
+              )
+            }
+          />
         ))}
         {values.patients.length < maxPatients && (
           <Button

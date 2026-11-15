@@ -250,6 +250,45 @@ export const useUpdateClinic = () => {
   });
 };
 
+// Optional features of a clinic (superadmin only)
+export const useSetClinicFeature = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.setClinicFeature,
+    onSuccess: (features, { clinicId }) => {
+      queryClient.setQueryData<api.ClinicDetails>(["clinic", clinicId], (old) =>
+        old ? { ...old, features } : old,
+      );
+      // The superadmin may be working in this clinic: /me lists its features
+      return queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+};
+
+// Documentación of a clinic: legal details and signed documents (superadmin only)
+export const useClinicLegal = (clinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["clinicLegal", clinicId],
+    queryFn: () => api.getClinicLegal(clinicId!),
+    enabled: !!clinicId,
+  });
+};
+
+const useClinicLegalMutation = <TVariables extends { clinicId: string }>(
+  mutationFn: (variables: TVariables) => Promise<void>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (_result, { clinicId }) =>
+      queryClient.invalidateQueries({ queryKey: ["clinicLegal", clinicId] }),
+  });
+};
+
+export const useUpdateClinicLegal = () => useClinicLegalMutation(api.updateClinicLegal);
+export const useUploadClinicDocument = () => useClinicLegalMutation(api.uploadClinicDocument);
+export const useDeleteClinicDocument = () => useClinicLegalMutation(api.deleteClinicDocument);
+
 //Invitations (superadmin only)
 export const useCreateInvitation = () => {
   const queryClient = useQueryClient();
@@ -407,13 +446,107 @@ const useAppointmentsMutation = <TVariables, TResult>(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+    // Appointments also show in each patient's ficha
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+        queryClient.invalidateQueries({ queryKey: ["patient"] }),
+      ]),
   });
 };
 
 export const useCreateAppointment = () => useAppointmentsMutation(api.createAppointment);
 export const useUpdateAppointment = () => useAppointmentsMutation(api.updateAppointment);
 export const useDeleteAppointment = () => useAppointmentsMutation(api.deleteAppointment);
+
+//Pacientes of the active clinic (every clinic role)
+// The clinic id is only part of the cache key, like in useTeam
+export const usePatients = (
+  activeClinicId: string | undefined,
+  params: { search: string; limit: number },
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["patients", activeClinicId, params.search, params.limit],
+    queryFn: () => api.getPatients(params),
+    enabled: !!activeClinicId && enabled,
+    // Keep the list on screen while typing in the search box or loading more
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const usePatient = (activeClinicId: string | undefined, patientId: string | undefined) => {
+  return useQuery({
+    queryKey: ["patient", activeClinicId, patientId],
+    queryFn: () => api.getPatient(patientId!),
+    enabled: !!activeClinicId && !!patientId,
+  });
+};
+
+// The name shows in the list, the ficha and the calendar: reload them all
+const usePatientsMutation = <TVariables, TResult>(
+  mutationFn: (variables: TVariables) => Promise<TResult>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["patients"] }),
+        queryClient.invalidateQueries({ queryKey: ["patient"] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+      ]),
+  });
+};
+
+export const useCreatePatient = () => usePatientsMutation(api.createPatient);
+export const useUpdatePatient = () => usePatientsMutation(api.updatePatient);
+
+export const useDeletePatient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deletePatient,
+    onSuccess: (_result, patientId) => {
+      // Drop the deleted ficha instead of reloading it (it would be a 404)
+      queryClient.removeQueries({ queryKey: ["patient"], predicate: (q) => q.queryKey[2] === patientId });
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["patients"] }),
+        queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+      ]);
+    },
+  });
+};
+
+//Historia clínica of a patient (owners, admins and physios)
+// `enabled`: false for receptionists, who can't see it (the backend answers 403)
+export const usePatientClinical = (
+  activeClinicId: string | undefined,
+  patientId: string | undefined,
+  enabled: boolean,
+) => {
+  return useQuery({
+    queryKey: ["patientClinical", activeClinicId, patientId],
+    queryFn: () => api.getPatientClinical(patientId!),
+    enabled: !!activeClinicId && !!patientId && enabled,
+  });
+};
+
+// Every change reloads the patient's whole clinical history
+const useClinicalMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<void>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patientClinical"] }),
+  });
+};
+
+export const useUpdateClinicalBackground = () => useClinicalMutation(api.updateClinicalBackground);
+export const useCreateCase = () => useClinicalMutation(api.createCase);
+export const useUpdateCase = () => useClinicalMutation(api.updateCase);
+export const useDeleteCase = () => useClinicalMutation(api.deleteCase);
+export const useCreateCaseNote = () => useClinicalMutation(api.createCaseNote);
+export const useUpdateCaseNote = () => useClinicalMutation(api.updateCaseNote);
+export const useDeleteCaseNote = () => useClinicalMutation(api.deleteCaseNote);
 
 //Reports (owners and admins of the active clinic)
 // month: "YYYY-MM". While the next month loads, the previous one stays on screen

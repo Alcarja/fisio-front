@@ -18,6 +18,10 @@ export type Membership = {
   role: ClinicRole;
 };
 
+// Optional features a superadmin switches on per clinic (off by default).
+// Mirrors back/src/lib/features.ts; labels for the panel in lib/features.ts
+export type ClinicFeature = "invoicing" | "clinical_history";
+
 // GET /me response
 export type Me = {
   user: {
@@ -28,7 +32,8 @@ export type Me = {
     role: PlatformRole | null;
   };
   memberships: Membership[];
-  activeClinic: Membership | null;
+  // The clinic being worked on, with the features switched on for it
+  activeClinic: (Membership & { features: ClinicFeature[] }) | null;
 };
 
 export const getMe = async (): Promise<Me> => {
@@ -336,6 +341,111 @@ export type ClinicInvitation = {
 export type ClinicDetails = Clinic & {
   members: ClinicMember[];
   invitations: ClinicInvitation[];
+  // Optional features switched on for this clinic
+  features: ClinicFeature[];
+};
+
+export type ClinicFeatureChange = {
+  clinicId: string;
+  feature: ClinicFeature;
+  enabled: boolean;
+};
+
+// Switch an optional feature on or off. Returns the clinic's features after it
+export const setClinicFeature = async ({
+  clinicId,
+  feature,
+  enabled,
+}: ClinicFeatureChange): Promise<ClinicFeature[]> => {
+  const { features } = await stpApi.put(
+    `/api/admin/clinics/${encodeURIComponent(clinicId)}/features/${encodeURIComponent(feature)}`,
+    { enabled },
+  );
+  return features;
+};
+
+//Documentación of a clinic (superadmin only): legal details and signed documents
+// Every field is optional; null while empty
+export type ClinicLegal = {
+  legalName: string | null; // the company or person that signs, not the trade name
+  taxId: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  signerName: string | null;
+  privacyContactName: string | null;
+  privacyContactEmail: string | null;
+  privacyContactPhone: string | null;
+  dpoContact: string | null;
+  notes: string | null;
+};
+
+// Mirrors back/src/lib/clinicDocuments.ts; labels in lib/clinicDocuments.ts
+export type ClinicDocumentType = "service_contract" | "dpa" | "health_annex" | "other";
+
+export type ClinicDocument = {
+  id: string;
+  type: ClinicDocumentType;
+  title: string | null;
+  signedAt: string | null; // "2026-11-16"
+  fileName: string;
+  fileType: string;
+  fileSize: number; // bytes
+  uploadedByName: string | null;
+  createdAt: string;
+};
+
+const clinicPath = (clinicId: string) => `/api/admin/clinics/${encodeURIComponent(clinicId)}`;
+
+export const getClinicLegal = async (
+  clinicId: string,
+): Promise<{ legal: ClinicLegal; documents: ClinicDocument[] }> => {
+  return stpApi.get(`${clinicPath(clinicId)}/legal`);
+};
+
+export const updateClinicLegal = async ({
+  clinicId,
+  changes,
+}: {
+  clinicId: string;
+  changes: Partial<ClinicLegal>;
+}): Promise<void> => {
+  await stpApi.put(`${clinicPath(clinicId)}/legal`, changes);
+};
+
+// PDF, JPG or PNG, up to 10 MB
+export const uploadClinicDocument = async ({
+  clinicId,
+  file,
+  type,
+  signedAt,
+  title,
+}: {
+  clinicId: string;
+  file: File;
+  type: ClinicDocumentType;
+  signedAt: string;
+  title: string;
+}): Promise<void> => {
+  await stpApi.upload(`${clinicPath(clinicId)}/documents`, file, {
+    type,
+    signedAt,
+    title,
+    fileName: file.name,
+  });
+};
+
+type DocumentRef = { clinicId: string; documentId: string };
+const documentPath = ({ clinicId, documentId }: DocumentRef) =>
+  `${clinicPath(clinicId)}/documents/${encodeURIComponent(documentId)}`;
+
+// The file itself, to open it in a new tab
+export const downloadClinicDocument = async (ref: DocumentRef): Promise<Blob> => {
+  return stpApi.download(`${documentPath(ref)}/file`);
+};
+
+export const deleteClinicDocument = async (ref: DocumentRef): Promise<void> => {
+  await stpApi.delete(documentPath(ref));
 };
 
 type InvitationRef = { clinicId: string; invitationId: string };
@@ -708,6 +818,233 @@ export const getCalendarConfig = async (range: {
   return stpApi.get("/api/clinic/calendar/config", { params: range });
 };
 
+//Pacientes of the active clinic. Every clinic role; deleting: owners and admins
+export type Patient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  email: string | null;
+  nif: string | null; // NIF, NIE or passport
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  birthDate: string | null; // "1985-04-23"
+  notes: string | null;
+  createdAt: string;
+};
+
+// Empty optional fields go as null
+export type PatientInput = Omit<Patient, "id" | "createdAt">;
+
+// One appointment in a patient's history (clinic's local time)
+export type PatientAppointment = {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isPast: boolean;
+  status: AppointmentStatus;
+  attendance: AppointmentPatient["attendance"];
+  serviceName: string;
+  serviceColor: string;
+  physioName: string;
+};
+
+export type PatientDetails = Patient & {
+  appointments: PatientAppointment[]; // newest first
+};
+
+const PATIENTS_PATH = "/api/clinic/patients";
+const patientPath = (patientId: string) => `${PATIENTS_PATH}/${encodeURIComponent(patientId)}`;
+
+// GET ?search&limit -> the first `limit` by surname, and how many match in all.
+// search: words from the name, phone, email or NIF
+export const getPatients = async (params: {
+  search: string;
+  limit: number;
+}): Promise<{ patients: Patient[]; total: number }> => {
+  return stpApi.get(PATIENTS_PATH, { params });
+};
+
+export const getPatient = async (patientId: string): Promise<PatientDetails> => {
+  const { patient } = await stpApi.get(patientPath(patientId));
+  return patient;
+};
+
+export const createPatient = async (data: PatientInput): Promise<Patient> => {
+  const { patient } = await stpApi.post(PATIENTS_PATH, data);
+  return patient;
+};
+
+export const updatePatient = async ({
+  patientId,
+  changes,
+}: {
+  patientId: string;
+  changes: Partial<PatientInput>;
+}): Promise<Patient> => {
+  const { patient } = await stpApi.patch(patientPath(patientId), changes);
+  return patient;
+};
+
+// Their appointments stay in the calendar with the name, without ficha
+export const deletePatient = async (patientId: string): Promise<void> => {
+  await stpApi.delete(patientPath(patientId));
+};
+
+//Historia clínica of a patient: owners, admins and physios (not receptionists)
+// Mirrors back/src/lib/clinical.ts; labels in pages/Admin/Patients/clinicalFormat.ts
+export type BodyRegion =
+  | "head_jaw"
+  | "neck"
+  | "shoulder"
+  | "elbow"
+  | "wrist_hand"
+  | "thoracic"
+  | "lumbar"
+  | "hip_pelvis"
+  | "knee"
+  | "ankle_foot"
+  | "general";
+export type CaseSide = "left" | "right" | "both";
+export type CloseOutcome = "resolved" | "improved" | "no_change" | "referred" | "dropped";
+
+// Antecedentes: health data that applies to all the patient's expedientes
+export type ClinicalBackground = {
+  clinicalAlert: string | null; // shown on top: "Marcapasos"…
+  allergies: string | null;
+  medication: string | null;
+  medicalHistory: string | null;
+  occupation: string | null;
+};
+
+type Professional = { userId: string; name: string };
+
+// Evolution: one note per session
+export type CaseNote = {
+  id: string;
+  date: string; // "2026-11-16"
+  painLevel: number | null; // EVA 0-10
+  text: string;
+  author: Professional | null;
+  createdAt: string;
+  edited: boolean;
+};
+
+// Expediente: one injury or reason for coming. Several can be open at once
+export type PatientCase = {
+  id: string;
+  title: string;
+  bodyRegion: BodyRegion;
+  side: CaseSide | null;
+  status: "open" | "closed";
+  physio: Professional | null; // responsible
+  reason: string | null;
+  diagnosis: string | null;
+  plan: string | null;
+  onsetDate: string | null; // when the injury started
+  openedAt: string;
+  closedAt: string | null;
+  closeOutcome: CloseOutcome | null;
+  closeNotes: string | null;
+  notes: CaseNote[]; // newest first
+};
+
+export type PatientClinical = {
+  background: ClinicalBackground;
+  cases: PatientCase[]; // open first
+  professionals: Professional[]; // choices for the responsible physio
+};
+
+export type CaseInput = {
+  title: string;
+  bodyRegion: BodyRegion;
+  side: CaseSide | null;
+  physioId: string | null;
+  reason: string | null;
+  diagnosis: string | null;
+  plan: string | null;
+  onsetDate: string | null;
+  openedAt: string;
+};
+
+// Editing, closing ({ status: "closed", closeOutcome… }) or reopening ({ status: "open" })
+export type CaseChanges = Partial<CaseInput> & {
+  status?: "open" | "closed";
+  closeOutcome?: CloseOutcome;
+  closeNotes?: string | null;
+  closedAt?: string;
+};
+
+export type CaseNoteInput = { text: string; painLevel: number | null; date: string };
+
+type CaseRef = { patientId: string; caseId: string };
+const casesPath = (patientId: string) => `${patientPath(patientId)}/cases`;
+const casePath = ({ patientId, caseId }: CaseRef) =>
+  `${casesPath(patientId)}/${encodeURIComponent(caseId)}`;
+const notePath = (ref: CaseRef, noteId: string) =>
+  `${casePath(ref)}/notes/${encodeURIComponent(noteId)}`;
+
+export const getPatientClinical = async (patientId: string): Promise<PatientClinical> => {
+  const { clinical } = await stpApi.get(`${patientPath(patientId)}/clinical`);
+  return clinical;
+};
+
+export const updateClinicalBackground = async ({
+  patientId,
+  changes,
+}: {
+  patientId: string;
+  changes: Partial<ClinicalBackground>;
+}): Promise<void> => {
+  await stpApi.patch(`${patientPath(patientId)}/clinical`, changes);
+};
+
+export const createCase = async ({
+  patientId,
+  data,
+}: {
+  patientId: string;
+  data: CaseInput;
+}): Promise<void> => {
+  await stpApi.post(casesPath(patientId), data);
+};
+
+export const updateCase = async ({
+  changes,
+  ...ref
+}: CaseRef & { changes: CaseChanges }): Promise<void> => {
+  await stpApi.patch(casePath(ref), changes);
+};
+
+// Only expedientes without notes
+export const deleteCase = async (ref: CaseRef): Promise<void> => {
+  await stpApi.delete(casePath(ref));
+};
+
+export const createCaseNote = async ({
+  data,
+  ...ref
+}: CaseRef & { data: CaseNoteInput }): Promise<void> => {
+  await stpApi.post(`${casePath(ref)}/notes`, data);
+};
+
+export const updateCaseNote = async ({
+  noteId,
+  changes,
+  ...ref
+}: CaseRef & { noteId: string; changes: Partial<CaseNoteInput> }): Promise<void> => {
+  await stpApi.patch(notePath(ref, noteId), changes);
+};
+
+export const deleteCaseNote = async ({
+  noteId,
+  ...ref
+}: CaseRef & { noteId: string }): Promise<void> => {
+  await stpApi.delete(notePath(ref, noteId));
+};
+
 //Appointments (Reservas). Every role of the active clinic; deleting: owners and admins
 // Dates and times are the clinic's local time ("2026-11-16", "09:30")
 
@@ -715,6 +1052,8 @@ export type AppointmentStatus = "booked" | "confirmed" | "completed" | "no_show"
 
 export type AppointmentPatient = {
   id: string;
+  // The patient's ficha. null: booked with just the name, or ficha deleted
+  patientId: string | null;
   firstName: string;
   lastName: string;
   attendance: "pending" | "attended" | "no_show";
@@ -738,7 +1077,13 @@ export type Appointment = {
   issues: { code: string; message: string }[];
 };
 
-export type PatientName = { firstName: string; lastName: string };
+// A patient of an appointment being saved: an existing ficha (patientId), or
+// just the names of someone without ficha (none is created)
+export type AppointmentPatientInput = {
+  patientId?: string;
+  firstName: string;
+  lastName: string;
+};
 
 export type NewAppointment = {
   serviceId: string;
@@ -746,7 +1091,7 @@ export type NewAppointment = {
   physioId: string;
   date: string;
   startTime: string;
-  patients: PatientName[];
+  patients: AppointmentPatientInput[];
   status: "booked" | "confirmed";
   notes: string | null;
 };

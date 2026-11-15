@@ -6,8 +6,16 @@ import { paths } from "./paths";
 import RequireRole from "./RequireRole";
 import RequireActiveClinic from "./RequireActiveClinic";
 import SelectClinicPage from "@/pages/SelectClinic/SelectClinicPage";
-import { bookingsAccess, panelAccess, superadminAccess, teamAccess } from "@/lib/roles";
+import {
+  bookingsAccess,
+  panelAccess,
+  patientsAccess,
+  superadminAccess,
+  teamAccess,
+} from "@/lib/roles";
 import BookingsPage from "@/pages/Admin/Bookings/BookingsPage";
+import PatientsPage from "@/pages/Admin/Patients/PatientsPage";
+import PatientDetailsPage from "@/pages/Admin/Patients/[patientId]/PatientDetailsPage";
 import TeamPage from "@/pages/Admin/Team/TeamPage";
 import ReportsPage from "@/pages/Admin/Reports/ReportsPage";
 import SettingsLayout from "@/pages/Admin/Settings/SettingsLayout";
@@ -120,6 +128,19 @@ export const router = createBrowserRouter([
           </RequireRole>
         ),
         children: [{ path: paths.adminBookings, element: <BookingsPage /> }],
+      },
+      // Pacientes: every role of the active clinic, if the clinic has the
+      // feature switched on. Everyone else back to /admin
+      {
+        element: (
+          <RequireRole access={patientsAccess} redirectTo={paths.admin}>
+            <Outlet />
+          </RequireRole>
+        ),
+        children: [
+          { path: paths.adminPatients, element: <PatientsPage /> },
+          { path: paths.adminPatient, element: <PatientDetailsPage /> },
+        ],
       },
       // Day-to-day section for physios and receptionists: add a group here with
       // <RequireRole access={staffAccess} redirectTo={paths.admin}> when its
