@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router";
 import {
   ArrowLeft,
   Building2,
+  CreditCard,
   CalendarDays,
   ChartColumn,
   LayoutDashboard,
@@ -64,7 +65,10 @@ const sections: SidebarSection[] = [
   {
     title: "Plataforma",
     access: superadminAccess,
-    items: [{ label: "Clínicas", icon: Building2, to: paths.adminClinics }],
+    items: [
+      { label: "Clínicas", icon: Building2, to: paths.adminClinics },
+      { label: "Pagos", icon: CreditCard, to: paths.adminBilling },
+    ],
   },
   // Owners and admins of the active clinic: staff and settings
   {

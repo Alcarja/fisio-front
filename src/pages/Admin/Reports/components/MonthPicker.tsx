@@ -8,10 +8,18 @@ type Props = {
   onPrevious: () => void;
   onNext: () => void;
   onCurrent: () => void;
+  nextDisabled?: boolean; // e.g. Pagos: future months can't be paid yet
 };
 
 // The only filter of the page: everything below refers to this month
-export default function MonthPicker({ month, isCurrent, onPrevious, onNext, onCurrent }: Props) {
+export default function MonthPicker({
+  month,
+  isCurrent,
+  onPrevious,
+  onNext,
+  onCurrent,
+  nextDisabled = false,
+}: Props) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-1">
@@ -37,6 +45,7 @@ export default function MonthPicker({ month, isCurrent, onPrevious, onNext, onCu
           size="icon"
           className="rounded-full"
           onClick={onNext}
+          disabled={nextDisabled}
           aria-label="Mes siguiente"
         >
           <ChevronRight />

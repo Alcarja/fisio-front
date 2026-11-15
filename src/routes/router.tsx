@@ -15,6 +15,7 @@ import SchedulePage from "@/pages/Admin/Settings/Schedule/SchedulePage";
 import RoomsPage from "@/pages/Admin/Settings/Rooms/RoomsPage";
 import ServicesPage from "@/pages/Admin/Settings/Services/ServicesPage";
 import ClinicsPage from "@/pages/Admin/Clinics/ClinicsPage";
+import BillingPage from "@/pages/Admin/Billing/BillingPage";
 import ClinicDetailsPage from "@/pages/Admin/Clinics/[clinicId]/ClinicDetailsPage";
 import HomePage from "@/pages/Home/HomePage";
 import AboutPage from "@/pages/About/AboutPage";
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
         children: [
           { path: paths.adminClinics, element: <ClinicsPage /> },
           { path: paths.adminClinic, element: <ClinicDetailsPage /> },
+          { path: paths.adminBilling, element: <BillingPage /> },
         ],
       },
       // Clinic section: owner/admin of the active clinic, everyone else back to /admin

@@ -18,6 +18,8 @@ export const paths = {
   adminSettingsServices: "/admin/settings/services",
   // Superadmin only
   adminClinics: "/admin/clinics",
+  // Superadmin only: which clinics have paid each month
+  adminBilling: "/admin/billing",
   // Build real links with generatePath(paths.adminClinic, { clinicId })
   adminClinic: "/admin/clinics/:clinicId",
   login: "/login",

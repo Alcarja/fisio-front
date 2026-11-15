@@ -166,6 +166,33 @@ export const useGetClinicById = (clinicId: string | undefined) => {
   });
 };
 
+//Pagos (superadmin only)
+export const useBilling = (month: string) => {
+  return useQuery({
+    queryKey: ["billing", month],
+    queryFn: () => api.getBilling(month),
+    // Keep the previous month on screen while the next one loads
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useSetPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.setPayment,
+    // Every month's list shows the history strip: reload them all
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing"] }),
+  });
+};
+
+export const useSetBillingExempt = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.setBillingExempt,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing"] }),
+  });
+};
+
 export const useCreateClinic = () => {
   const queryClient = useQueryClient();
   return useMutation({

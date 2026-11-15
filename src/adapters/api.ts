@@ -208,6 +208,48 @@ export const getAllClinics = async (): Promise<Clinic[]> => {
   return clinics;
 };
 
+//Pagos de las clínicas (superadmin only). Manual: who has paid each month
+export type ClinicBilling = {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  status: string | null;
+  startMonth: string; // "2026-03": created that month, earlier months aren't owed
+  exempt: boolean; // "no tiene que pagar"
+  // The selected month: when it was marked as paid (null = pending)
+  payment: { paidAt: string; recordedByName: string | null } | null;
+  paidMonths: string[]; // paid months among the last 12 (selected one included)
+};
+
+export type BillingMonth = {
+  month: string; // "2026-11"
+  currentMonth: string; // this month in Spain, the last one that can be marked
+  clinics: ClinicBilling[];
+};
+
+export const getBilling = async (month: string): Promise<BillingMonth> =>
+  stpApi.get("/api/admin/billing", { params: { month } });
+
+const billingPath = (clinicId: string) => `/api/admin/billing/${encodeURIComponent(clinicId)}`;
+
+export type PaymentChange = { clinicId: string; month: string; paid: boolean };
+
+export const setPayment = async ({ clinicId, month, paid }: PaymentChange): Promise<void> => {
+  const path = `${billingPath(clinicId)}/payments/${month}`;
+  await (paid ? stpApi.put(path, {}) : stpApi.delete(path));
+};
+
+export const setBillingExempt = async ({
+  clinicId,
+  exempt,
+}: {
+  clinicId: string;
+  exempt: boolean;
+}): Promise<void> => {
+  await stpApi.put(`${billingPath(clinicId)}/exempt`, { exempt });
+};
+
 export type NewClinic = {
   name: string;
   slug: string;
