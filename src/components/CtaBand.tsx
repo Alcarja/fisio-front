@@ -1,5 +1,7 @@
+import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { paths } from "@/routes/paths";
 
 export default function CtaBand() {
   return (
@@ -31,22 +33,26 @@ export default function CtaBand() {
             Devuélvele el <em className="text-coral">tiempo</em> a tu clínica.
           </h2>
           <p className="max-w-lg text-lg text-primary-foreground/75">
-            Da de alta a tu equipo, abre tu agenda y cita a tu primer paciente
-            esta misma tarde.
+            Configura tus servicios y salas, invita a tu equipo y cita a tu
+            primer paciente esta misma tarde.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
               size="lg"
               className="h-12 rounded-full bg-primary-foreground px-6 text-primary hover:bg-primary-foreground/90"
+              asChild
             >
-              Empieza gratis <ArrowRight />
+              <Link to={paths.contact}>
+                Solicita acceso <ArrowRight />
+              </Link>
             </Button>
             <Button
               size="lg"
               variant="ghost"
               className="h-12 rounded-full px-6 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              asChild
             >
-              Habla con nosotros
+              <Link to={paths.login}>Ya tengo cuenta</Link>
             </Button>
           </div>
         </div>

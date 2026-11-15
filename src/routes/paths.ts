@@ -2,6 +2,8 @@
 export const paths = {
   home: "/",
   about: "/about",
+  // Public contact form for clinics interested in Kineflow
+  contact: "/contacto",
   admin: "/admin",
   // The logged-in user's own details and password: every role
   adminAccount: "/admin/account",
@@ -18,6 +20,8 @@ export const paths = {
   adminSettingsServices: "/admin/settings/services",
   // Superadmin only
   adminClinics: "/admin/clinics",
+  // Superadmin only: requests sent from the website's contact form
+  adminRequests: "/admin/requests",
   // Superadmin only: which clinics have paid each month
   adminBilling: "/admin/billing",
   // Build real links with generatePath(paths.adminClinic, { clinicId })

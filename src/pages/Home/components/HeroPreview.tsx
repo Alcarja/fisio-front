@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, Plus, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleAlert, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { treatments, type Treatment } from "./treatments";
 
@@ -23,7 +23,7 @@ const team: { name: string; initials: string; appointments: Appointment[] }[] = 
     appointments: [
       { patient: "Ana Morales", start: 480, duration: 60, type: "rehab" },
       { patient: "Jorge Pérez", start: 555, duration: 45, type: "physio" },
-      { patient: "Lucía Fernández", start: 615, duration: 60, type: "physio", note: "Sesión 6 de 10" },
+      { patient: "Lucía Fernández", start: 615, duration: 60, type: "physio", note: "Confirmada" },
       { patient: "Elena Ruiz", start: 720, duration: 60, type: "massage" },
     ],
   },
@@ -190,7 +190,7 @@ export default function HeroPreview() {
                         >
                           <span className="truncate text-xs font-medium">{a.patient}</span>
                           <span className="truncate text-[10px] opacity-70">
-                            {fmt(a.start)} · {a.note ?? (a.type === "open" ? "Lista de espera: 3" : treatments[a.type].label)}
+                            {fmt(a.start)} · {a.note ?? (a.type === "open" ? "Disponible" : treatments[a.type].label)}
                           </span>
                         </div>
                       );
@@ -227,13 +227,14 @@ export default function HeroPreview() {
       >
         <div className="motion-safe:animate-float">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex size-5 items-center justify-center rounded-full bg-sage">
-              <Check className="size-3 text-foreground" />
+            <span className="flex size-5 items-center justify-center rounded-full bg-sand">
+              <CircleAlert className="size-3 text-coral" />
             </span>
-            Recordatorio · ahora mismo
+            Antes de guardar
           </div>
           <p className="mt-2 text-sm">
-            <span className="font-medium">Lucía</span> ha confirmado mañana a las 10:30 con Laura.
+            <span className="font-medium">Carlos</span> ya tiene una cita a las 10:00. Elige otra
+            hora u otro fisio.
           </p>
         </div>
       </div>
@@ -245,36 +246,28 @@ export default function HeroPreview() {
       >
         <div className="motion-safe:animate-float [animation-delay:-3s]">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Nivel de dolor · Lucía</span>
-            <span className="flex items-center gap-1 font-medium text-primary">
-              <TrendingDown className="size-3.5" /> −57%
-            </span>
+            <span>Informe · noviembre</span>
+            <span className="font-medium text-primary">4 % ausencias</span>
           </div>
           <div className="mt-1 flex items-baseline gap-2">
-            <span className="font-display text-4xl leading-none">3</span>
-            <span className="text-xs text-muted-foreground">/ 10, antes 7</span>
+            <span className="font-display text-4xl leading-none">312</span>
+            <span className="text-xs text-muted-foreground">citas este mes</span>
           </div>
-          <svg viewBox="0 0 200 48" className="mt-3 h-12 w-full overflow-visible">
-            <path
-              d="M0 8 L40 12 L80 18 L120 26 L160 32 L200 36"
-              fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="stroke-primary"
-            />
+          <div className="mt-3 flex h-12 items-end gap-2">
             {[
-              [0, 8], [40, 12], [80, 18], [120, 26], [160, 32], [200, 36],
-            ].map(([x, y], i, arr) => (
-              <circle
-                key={x}
-                cx={x}
-                cy={y}
-                r={i === arr.length - 1 ? 4 : 2.5}
-                className={i === arr.length - 1 ? "fill-coral" : "fill-primary"}
+              ["Laura", 96],
+              ["Carlos", 84],
+              ["Marta", 71],
+              ["Iván", 61],
+            ].map(([name, v]) => (
+              <span
+                key={name}
+                title={`${name}: ${v}`}
+                className="flex-1 rounded-t-md bg-primary/80"
+                style={{ height: `${(Number(v) / 96) * 100}%` }}
               />
             ))}
-          </svg>
+          </div>
         </div>
       </div>
     </div>

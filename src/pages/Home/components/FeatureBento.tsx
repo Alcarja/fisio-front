@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowRight, FileText } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Tile({
@@ -29,121 +29,168 @@ function Tile({
   );
 }
 
-function SessionPack() {
-  const used = 6;
+// Informes: appointments of the month per physio
+function MonthlyByPhysio() {
+  const physios = [
+    { name: "Laura", v: 96 },
+    { name: "Carlos", v: 84 },
+    { name: "Marta", v: 71 },
+    { name: "Iván", v: 61 },
+  ];
+  const max = Math.max(...physios.map((p) => p.v));
+  return (
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <div className="flex items-baseline gap-3">
+        <span className="font-display text-5xl leading-none">312</span>
+        <span className="text-sm text-muted-foreground">citas en noviembre · 4 % ausencias</span>
+      </div>
+      <div className="flex h-32 items-end gap-3">
+        {physios.map(({ name, v }) => (
+          <div key={name} className="flex flex-1 flex-col items-center gap-2">
+            <span className="text-[11px] font-medium tabular-nums">{v}</span>
+            <div className="flex h-20 w-full items-end">
+              <div
+                className="w-full origin-bottom rounded-t-lg bg-primary/80 transition-transform duration-500 group-hover:scale-y-105"
+                style={{ height: `${(v / max) * 100}%` }}
+              />
+            </div>
+            <span className="text-[11px] text-muted-foreground">{name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Group sessions: places taken out of the service's maximum
+function GroupClass() {
+  const taken = 4;
+  const places = 6;
   return (
     <div className="flex w-full max-w-xs flex-col gap-3">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium">Bono de 10 sesiones</span>
+        <span className="text-sm font-medium">Pilates · 18:00</span>
         <span className="font-display text-3xl leading-none">
-          {used}
-          <span className="text-muted-foreground">/10</span>
+          {taken}
+          <span className="text-muted-foreground">/{places}</span>
         </span>
       </div>
-      <div className="grid grid-cols-10 gap-1.5">
-        {Array.from({ length: 10 }, (_, i) => (
+      <div className="grid grid-cols-6 gap-1.5">
+        {Array.from({ length: places }, (_, i) => (
           <span
             key={i}
             className={cn(
               "aspect-square rounded-full transition-transform duration-300 group-hover:scale-110",
-              i < used ? "bg-primary" : "bg-muted",
+              i < taken ? "bg-lilac" : "border-2 border-dashed border-border",
             )}
-            style={{ transitionDelay: `${i * 30}ms` }}
+            style={{ transitionDelay: `${i * 40}ms` }}
           />
         ))}
       </div>
-      <span className="text-xs text-muted-foreground">Quedan 4 · aviso de renovación al llegar a 2</span>
+      <span className="text-xs text-muted-foreground">Quedan 2 plazas · Sala polivalente</span>
     </div>
   );
 }
 
-function Invoice() {
-  return (
-    <div className="w-full max-w-[15rem] rotate-[-3deg] rounded-xl border bg-background p-4 shadow-md transition-transform duration-500 group-hover:rotate-0">
-      <div className="flex items-center justify-between">
-        <FileText className="size-4 text-muted-foreground" />
-        <span className="rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium">Pagada</span>
-      </div>
-      <div className="mt-4 flex flex-col gap-2 text-xs">
-        <div className="flex justify-between"><span className="text-muted-foreground">Fisioterapia × 2</span><span>90 €</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Punción seca</span><span>20 €</span></div>
-        <div className="mt-1 flex justify-between border-t pt-2 font-medium"><span>Total</span><span>110 €</span></div>
-      </div>
-    </div>
-  );
-}
-
-function Signature() {
-  return (
-    <div className="flex w-full max-w-[15rem] flex-col gap-2">
-      <span className="text-xs text-muted-foreground">Consentimiento · tratamiento de datos</span>
-      <svg viewBox="0 0 220 70" className="h-16 w-full">
-        <path
-          d="M8 48 C 20 10, 34 10, 30 44 S 52 60, 60 30 S 78 20, 82 46 C 86 62, 104 18, 118 34 S 140 58, 150 36 C 158 22, 170 30, 176 42 L 210 40"
-          fill="none"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          pathLength={1}
-          className="stroke-foreground [stroke-dasharray:1] motion-safe:group-hover:animate-draw"
-        />
-      </svg>
-      <div className="flex items-center justify-between border-t pt-2 text-xs">
-        <span>Lucía Fernández</span>
-        <span className="text-muted-foreground">Firmado en tablet</span>
-      </div>
-    </div>
-  );
-}
-
-function Occupancy() {
-  const days = [
-    { d: "Lun", v: 82 },
-    { d: "Mar", v: 94 },
-    { d: "Mié", v: 76 },
-    { d: "Jue", v: 88 },
-    { d: "Vie", v: 64 },
+// Appointment statuses
+function Statuses() {
+  const statuses = [
+    { label: "Reservada", className: "bg-muted" },
+    { label: "Confirmada", className: "bg-sky" },
+    { label: "Completada", className: "bg-sage" },
+    { label: "No se presentó", className: "bg-sand" },
   ];
   return (
-    <div className="flex w-full max-w-sm flex-col gap-4">
-      <div className="flex items-baseline gap-3">
-        <span className="font-display text-5xl leading-none">81%</span>
-        <span className="text-sm text-muted-foreground">de ocupación esta semana</span>
-      </div>
-      <div className="flex h-32 items-end gap-3">
-        {days.map(({ d, v }) => (
-          <div key={d} className="flex flex-1 flex-col items-center gap-2">
-            <div className="flex h-24 w-full items-end">
-              <div
-                className={cn(
-                  "w-full origin-bottom rounded-t-lg transition-transform duration-500 group-hover:scale-y-105",
-                  v === 94 ? "bg-coral" : "bg-primary/80",
-                )}
-                style={{ height: `${v}%` }}
-              />
-            </div>
-            <span className="text-[11px] text-muted-foreground">{d}</span>
-          </div>
-        ))}
-      </div>
+    <div className="flex w-full max-w-[15rem] flex-col gap-2">
+      {statuses.map((s, i) => (
+        <span
+          key={s.label}
+          className={cn(
+            "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-transform duration-300 group-hover:translate-x-1",
+            s.className,
+          )}
+          style={{ transitionDelay: `${i * 40}ms` }}
+        >
+          <Check className="size-3.5" /> {s.label}
+        </span>
+      ))}
+      <span className="flex items-center gap-2 rounded-full border border-dashed px-3 py-1.5 text-xs text-muted-foreground">
+        Cancelada · «Gripe, la mueve a la semana que viene»
+      </span>
     </div>
   );
 }
 
-function WaitingList() {
+// Opening hours with a closed day
+function OpeningWeek() {
+  const days = [
+    { d: "L", ranges: [[0, 45], [60, 100]] },
+    { d: "M", ranges: [[0, 45], [60, 100]] },
+    { d: "X", ranges: [] },
+    { d: "J", ranges: [[0, 45], [60, 100]] },
+    { d: "V", ranges: [[0, 60]] },
+  ];
   return (
-    <div className="flex w-full max-w-xs flex-col gap-2">
-      <div className="flex items-center gap-2 rounded-xl border border-dashed p-3 text-sm">
-        <span className="size-2 rounded-full bg-coral motion-safe:animate-pulse-ring" />
-        Se acaba de liberar las 17:00 con Marta
-      </div>
-      <div className="ml-4 flex flex-col gap-2 border-l pl-4">
-        {["Ofrecido a Javier", "Ofrecido a Carmen", "Reservado por Andrés"].map((s, i) => (
-          <div key={s} className="flex items-center gap-2 text-xs">
-            <ArrowRight className="size-3 text-muted-foreground" />
-            <span className={cn(i === 2 ? "font-medium" : "text-muted-foreground")}>{s}</span>
+    <div className="flex w-full max-w-[15rem] flex-col gap-3">
+      <div className="flex h-32 gap-2">
+        {days.map((day) => (
+          <div key={day.d} className="flex flex-1 flex-col items-center gap-2">
+            <div className="relative w-full flex-1 rounded-md bg-muted/60">
+              {day.ranges.length === 0 ? (
+                <span className="absolute inset-0 rounded-md border-2 border-dashed border-coral/60" />
+              ) : (
+                day.ranges.map(([from, to]) => (
+                  <span
+                    key={from}
+                    className="absolute inset-x-0.5 rounded-sm bg-primary/70"
+                    style={{ top: `${from}%`, height: `${to - from}%` }}
+                  />
+                ))
+              )}
+            </div>
+            <span className="text-[11px] text-muted-foreground">{day.d}</span>
           </div>
         ))}
       </div>
+      <span className="text-xs">
+        <span className="font-medium text-coral">Miércoles 8 cerrado</span>
+        <span className="text-muted-foreground"> · festivo</span>
+      </span>
+    </div>
+  );
+}
+
+// Several clinics, one account
+function ClinicSwitch() {
+  const clinics = [
+    { initials: "MV", name: "Clínica Movimiento", role: "Propietario", active: true, className: "bg-sage" },
+    { initials: "KN", name: "Centro Kine Norte", role: "Fisioterapeuta", active: false, className: "bg-sky" },
+  ];
+  return (
+    <div className="flex w-full max-w-[15rem] flex-col gap-2">
+      {clinics.map((c) => (
+        <div
+          key={c.name}
+          className={cn(
+            "flex items-center gap-3 rounded-xl border p-2.5 transition-colors",
+            c.active ? "bg-background shadow-sm" : "group-hover:bg-background",
+          )}
+        >
+          <span
+            className={cn(
+              "flex size-8 items-center justify-center rounded-lg text-[11px] font-medium",
+              c.className,
+            )}
+          >
+            {c.initials}
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-xs font-medium">{c.name}</span>
+            <span className="text-[11px] text-muted-foreground">{c.role}</span>
+          </div>
+          {c.active && <span className="size-1.5 rounded-full bg-coral" />}
+        </div>
+      ))}
     </div>
   );
 }
@@ -198,11 +245,11 @@ export default function FeatureBento() {
         <div className="flex max-w-2xl flex-col gap-4">
           <span className="text-sm font-medium text-coral">Todo en su sitio</span>
           <h2 className="font-display text-5xl leading-[1.02] tracking-tight text-balance md:text-6xl">
-            El resto de la clínica, resuelto.
+            Los detalles, resueltos.
           </h2>
         </div>
         <p className="max-w-sm text-muted-foreground">
-          Empieza por la agenda. Activa el resto cuando tu clínica lo necesite.
+          Todo lo que necesita la agenda de una clínica, incluido desde el primer día.
         </p>
       </div>
 
@@ -210,26 +257,38 @@ export default function FeatureBento() {
         <Tile
           className="md:col-span-2"
           title="Informes que se entienden"
-          description="Ocupación, ingresos por fisio y tasa de ausencias, sin exportar ni una hoja de cálculo."
+          description="Citas, horas de sesión, pacientes y ausencias de cada mes, por fisio y por servicio. Sin exportar ni una hoja de cálculo."
         >
-          <Occupancy />
+          <MonthlyByPhysio />
         </Tile>
-        <Tile title="Bonos de sesiones" description="Vende bonos y controla cada sesión consumida.">
-          <SessionPack />
+        <Tile
+          title="Sesiones en grupo"
+          description="Pilates o escuela de espalda con plazas limitadas. Nunca más pacientes de los que caben en el servicio o en la sala."
+        >
+          <GroupClass />
         </Tile>
-        <Tile title="Facturación" description="Facturas y cobros en dos clics.">
-          <Invoice />
+        <Tile
+          title="El estado de cada cita"
+          description="Reservada, confirmada, completada o ausencia. Las cancelaciones guardan su motivo."
+        >
+          <Statuses />
         </Tile>
-        <Tile title="Lista de espera" description="Los huecos cancelados se llenan solos.">
-          <WaitingList />
+        <Tile
+          title="Horario y festivos"
+          description="Varios tramos al día, y cierres u horarios especiales para fechas concretas."
+        >
+          <OpeningWeek />
         </Tile>
-        <Tile title="Consentimiento digital" description="Formularios conformes al RGPD, firmados en cualquier dispositivo.">
-          <Signature />
+        <Tile
+          title="Varias clínicas, una cuenta"
+          description="Si trabajas en más de una clínica, cambias de una a otra sin cerrar sesión."
+        >
+          <ClinicSwitch />
         </Tile>
         <Tile
           className="md:col-span-3 md:flex-row md:items-center"
           title="Equipo y salas"
-          description="Horarios, vacaciones y salas de tratamiento, para que nadie acabe citado en una sala ocupada."
+          description="Tipos de sala, capacidad y horario propio de cada sala, para que nadie acabe citado en una sala ocupada o que no sirve para ese tratamiento."
         >
           <Team />
         </Tile>

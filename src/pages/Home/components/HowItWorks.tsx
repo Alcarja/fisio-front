@@ -1,37 +1,38 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { RecordPreview, RecoverPreview, RemindPreview, SchedulePreview } from "./previews";
+import { ReportPreview, SchedulePreview, SetupPreview, TeamPreview } from "./previews";
 
 const STEP_DURATION = 7000; // ms each step stays on screen
 
+// Only what the app does today (Reservas, Configuración, Equipo, Informes)
 const steps = [
+  {
+    verb: "Configura",
+    title: "Tu clínica, tal y como funciona",
+    description:
+      "Define tus servicios con su duración, precio y color, tus salas y su capacidad, el horario de apertura y los días que cierras. Lo haces una vez y la agenda lo respeta siempre.",
+    Preview: SetupPreview,
+  },
+  {
+    verb: "Invita",
+    title: "Cada persona con su papel",
+    description:
+      "Añade a tu equipo por email. Fisioterapeutas, recepción y administradores ven y hacen solo lo que les corresponde.",
+    Preview: TeamPreview,
+  },
   {
     verb: "Organiza",
     title: "Todo el equipo en una sola agenda",
     description:
-      "Cada fisio, sala y tratamiento, uno al lado del otro. Detecta huecos, arrastra para cambiar citas y olvídate de las reservas duplicadas.",
+      "Cada fisio, sala y servicio en la misma vista, por día o por semana. Si una cita choca con otra, no cabe en la sala o queda fuera de horario, Kineflow te avisa antes de guardarla.",
     Preview: SchedulePreview,
   },
   {
-    verb: "Registra",
-    title: "Notas que acompañan al paciente",
+    verb: "Mide",
+    title: "El mes de un vistazo",
     description:
-      "Historia clínica, notas de cada sesión y escala de dolor en una sola línea de tiempo, para que cualquiera del equipo sepa cómo terminó la última sesión.",
-    Preview: RecordPreview,
-  },
-  {
-    verb: "Recuerda",
-    title: "Menos huecos vacíos",
-    description:
-      "Tus pacientes reciben un recordatorio el día antes y confirman con una sola respuesta. Las cancelaciones pasan directamente a tu lista de espera.",
-    Preview: RemindPreview,
-  },
-  {
-    verb: "Recupera",
-    title: "El tratamiento sigue en casa",
-    description:
-      "Envía planes de ejercicios con vídeos y comprueba quién los sigue entre sesiones.",
-    Preview: RecoverPreview,
+      "Citas, horas de sesión, pacientes y ausencias de cada mes, por servicio y por fisio. Sin exportar nada.",
+    Preview: ReportPreview,
   },
 ];
 
@@ -50,7 +51,7 @@ export default function HowItWorks() {
       <div className="flex max-w-2xl flex-col gap-4">
         <span className="text-sm font-medium text-coral">Cómo funciona</span>
         <h2 className="font-display text-5xl leading-[1.02] tracking-tight text-balance md:text-6xl">
-          De la primera visita al alta.
+          De la configuración a la primera cita.
         </h2>
       </div>
 

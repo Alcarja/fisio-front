@@ -12,7 +12,7 @@ import { paths } from "@/routes/paths";
 // Sample appointments for the decorative panel
 const today = [
   { time: "09:15", patient: "Jorge Pérez", type: "Fisioterapia", color: "bg-sage" },
-  { time: "10:30", patient: "Lucía Fernández", type: "Sesión 6 de 10", color: "bg-sky" },
+  { time: "10:30", patient: "Lucía Fernández", type: "Rehabilitación", color: "bg-sky" },
   { time: "12:00", patient: "Elena Ruiz", type: "Masaje", color: "bg-sand" },
 ];
 

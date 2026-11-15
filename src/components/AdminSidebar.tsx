@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Building2,
   CreditCard,
+  Inbox,
   CalendarDays,
   ChartColumn,
   LayoutDashboard,
@@ -11,7 +12,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useMe } from "@/adapters/hook";
+import { useContactRequests, useMe } from "@/adapters/hook";
 import ClinicSwitcher from "@/components/ClinicSwitcher";
 import { paths } from "@/routes/paths";
 import {
@@ -30,6 +31,9 @@ type SidebarItem = {
   // URL it opens (from paths.ts). Leave it out while the page doesn't exist:
   // the item shows greyed out with a "Pronto" tag
   to?: string;
+  // Small number next to the label (e.g. requests still to answer). Set in
+  // AdminSidebar from live data, not here
+  badge?: number;
 };
 
 // A group of links with a small title above
@@ -68,6 +72,7 @@ const sections: SidebarSection[] = [
     items: [
       { label: "Clínicas", icon: Building2, to: paths.adminClinics },
       { label: "Pagos", icon: CreditCard, to: paths.adminBilling },
+      { label: "Solicitudes", icon: Inbox, to: paths.adminRequests },
     ],
   },
   // Owners and admins of the active clinic: staff and settings
@@ -128,7 +133,20 @@ function ItemLink({ item, compact = false }: { item: SidebarItem; compact?: bool
         <>
           <Icon className={cn("size-4", isActive && "text-primary")} />
           {item.label}
-          {isActive && !compact && <span className="ml-auto size-1.5 rounded-full bg-coral" />}
+          {!!item.badge && (
+            <span
+              className={cn(
+                "flex h-5 min-w-5 items-center justify-center rounded-full bg-coral px-1.5 text-[11px] font-medium text-white tabular-nums",
+                !compact && "ml-auto",
+              )}
+              aria-label={`${item.badge} pendientes`}
+            >
+              {item.badge}
+            </span>
+          )}
+          {isActive && !compact && !item.badge && (
+            <span className="ml-auto size-1.5 rounded-full bg-coral" />
+          )}
         </>
       )}
     </NavLink>
@@ -137,7 +155,18 @@ function ItemLink({ item, compact = false }: { item: SidebarItem; compact?: bool
 
 export default function AdminSidebar() {
   const { data: me } = useMe();
-  const visibleSections = sections.filter((s) => !s.access || hasAccess(me, s.access));
+  // Superadmins see how many website requests are waiting for an answer
+  const isSuperadmin = hasAccess(me, superadminAccess);
+  const { data: requests } = useContactRequests(isSuperadmin);
+  const pendingRequests = requests?.filter((r) => !r.handled).length ?? 0;
+  const badges: Record<string, number> = { [paths.adminRequests]: pendingRequests };
+
+  const visibleSections = sections
+    .filter((s) => !s.access || hasAccess(me, s.access))
+    .map((s) => ({
+      ...s,
+      items: s.items.map((i) => (i.to && badges[i.to] ? { ...i, badge: badges[i.to] } : i)),
+    }));
   const items = visibleSections.flatMap((s) => s.items);
 
   return (

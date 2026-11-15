@@ -15,32 +15,38 @@ const principles = [
   {
     title: "Privacidad desde el diseño",
     description:
-      "Los datos de salud son de los más sensibles que existen. Los tratamos como tal, conforme al RGPD, desde la primera línea de código.",
+      "Los datos de tus pacientes son de los más sensibles que existen. Cada clínica solo ve los suyos, y cada persona solo lo que su rol le permite.",
   },
   {
     title: "Crece a tu ritmo",
     description:
-      "Un fisio autónomo y una clínica con diez salas no necesitan lo mismo. Activa cada función cuando la necesites, no antes.",
+      "Un fisio autónomo y una clínica con diez salas no necesitan lo mismo. Configura solo lo que uses: una sala o diez, un servicio o veinte.",
   },
 ];
 
+// Keep "Ya disponible" in sync with what the app really does
 const roadmap = [
   {
-    stage: "Ahora",
-    note: "En desarrollo",
-    items: ["Agenda del equipo", "Historias clínicas", "Notas de sesión"],
-    accent: "bg-coral",
+    stage: "Ya disponible",
+    note: "Funcionando",
+    items: [
+      "Agenda del equipo por día y semana",
+      "Salas, servicios y horarios",
+      "Equipo con roles e invitaciones",
+      "Informes mensuales",
+    ],
+    accent: "bg-primary",
   },
   {
-    stage: "Después",
+    stage: "Próximamente",
     note: "En diseño",
-    items: ["Recordatorios por SMS y WhatsApp", "Reserva online", "Lista de espera"],
-    accent: "bg-primary",
+    items: ["Fichas de pacientes e historias clínicas", "Recordatorios de citas", "Reserva online"],
+    accent: "bg-coral",
   },
   {
     stage: "Más adelante",
     note: "Explorando",
-    items: ["Facturación y bonos", "Planes de ejercicios en casa", "Informes"],
+    items: ["Facturación y bonos", "Lista de espera", "Planes de ejercicios en casa"],
     accent: "bg-muted-foreground/40",
   },
 ];
@@ -86,9 +92,9 @@ export default function AboutPage() {
             Estamos creando la herramienta que nos gustaría que todo fisio tuviera desde el primer día.
           </blockquote>
           <p className="text-muted-foreground">
-            Kineflow reúne la agenda, las historias clínicas y la gestión de la
-            clínica en un solo lugar, diseñado con fisioterapeutas y no solo
-            para ellos.
+            Kineflow empieza por lo que más tiempo quita: la agenda del equipo,
+            las salas y la organización de la clínica, en un solo lugar y
+            diseñado con fisioterapeutas, no solo para ellos.
           </p>
         </div>
       </section>

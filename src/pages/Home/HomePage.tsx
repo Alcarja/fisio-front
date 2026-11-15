@@ -1,5 +1,7 @@
+import { Link } from "react-router";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { paths } from "@/routes/paths";
 import CtaBand from "@/components/CtaBand";
 import HeroPreview from "./components/HeroPreview";
 import HowItWorks from "./components/HowItWorks";
@@ -52,16 +54,18 @@ export default function HomePage() {
             className="mt-8 max-w-xl text-lg text-muted-foreground text-pretty motion-safe:animate-rise md:text-xl"
             style={{ animationDelay: "160ms" }}
           >
-            Kineflow reúne la agenda de tu equipo, las historias clínicas y los
-            recordatorios en un solo lugar, para que cada hora sea para tus pacientes.
+            Kineflow reúne la agenda de tu equipo, tus salas y tus servicios en un solo
+            lugar, para que cada hora sea para tus pacientes.
           </p>
 
           <div
             className="mt-10 flex flex-col items-center gap-3 motion-safe:animate-rise sm:flex-row"
             style={{ animationDelay: "240ms" }}
           >
-            <Button size="lg" className="h-12 rounded-full px-6 text-base">
-              Empieza gratis <ArrowRight />
+            <Button size="lg" className="h-12 rounded-full px-6 text-base" asChild>
+              <Link to={paths.contact}>
+                Solicita acceso <ArrowRight />
+              </Link>
             </Button>
             <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 text-base" asChild>
               <a href="#how">
@@ -73,7 +77,7 @@ export default function HomePage() {
             className="mt-4 text-xs text-muted-foreground motion-safe:animate-rise"
             style={{ animationDelay: "300ms" }}
           >
-            Sin tarjeta de crédito · Listo en una tarde
+            Sin instalar nada · Lo configuras en una tarde
           </span>
         </div>
 

@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { to: paths.home, label: "Producto" },
   { to: paths.about, label: "Sobre nosotros" },
+  { to: paths.contact, label: "Contacto" },
 ];
 
 // Top bar of the public website
@@ -68,8 +69,10 @@ export default function Navbar() {
               <Button variant="ghost" className="hidden rounded-full sm:inline-flex" asChild>
                 <Link to={paths.login}>Iniciar sesión</Link>
               </Button>
-              <Button className="hidden rounded-full sm:inline-flex">
-                Empieza gratis <ArrowRight />
+              <Button className="hidden rounded-full sm:inline-flex" asChild>
+                <Link to={paths.contact}>
+                  Solicita acceso <ArrowRight />
+                </Link>
               </Button>
             </>
           )}
@@ -119,8 +122,10 @@ export default function Navbar() {
                   Iniciar sesión
                 </Link>
               </Button>
-              <Button className="mt-2 w-full rounded-2xl" size="lg">
-                Empieza gratis <ArrowRight />
+              <Button className="mt-2 w-full rounded-2xl" size="lg" asChild>
+                <Link to={paths.contact} onClick={() => setOpen(false)}>
+                  Solicita acceso <ArrowRight />
+                </Link>
               </Button>
             </>
           )}

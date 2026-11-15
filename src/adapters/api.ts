@@ -163,6 +163,58 @@ export const signOutOtherDevices = async (): Promise<unknown> => {
   return stpApi.post("/api/auth/revoke-other-sessions", {});
 };
 
+//Contact form (public, /contacto)
+export type TeamSize = "solo" | "2-5" | "6-15" | "16+";
+
+export type ContactRequest = {
+  name: string;
+  email: string;
+  clinicName: string;
+  phone?: string;
+  teamSize?: TeamSize;
+  message?: string;
+  // Hidden from people: only bots fill it in (the backend then ignores the request)
+  website?: string;
+};
+
+export const sendContactRequest = async (data: ContactRequest): Promise<void> => {
+  await stpApi.post("/api/contact", data);
+};
+
+//Contact requests inbox (superadmin only)
+export type ContactRequestItem = {
+  id: string;
+  name: string;
+  email: string;
+  clinicName: string;
+  phone: string | null;
+  teamSize: string | null; // already as text: "De 2 a 5 personas"
+  message: string | null;
+  handled: boolean; // already answered
+  createdAt: string;
+};
+
+const CONTACT_REQUESTS_PATH = "/api/admin/contact-requests";
+
+export const getContactRequests = async (): Promise<ContactRequestItem[]> => {
+  const { requests } = await stpApi.get(CONTACT_REQUESTS_PATH);
+  return requests;
+};
+
+export const setContactRequestHandled = async ({
+  id,
+  handled,
+}: {
+  id: string;
+  handled: boolean;
+}): Promise<void> => {
+  await stpApi.patch(`${CONTACT_REQUESTS_PATH}/${encodeURIComponent(id)}`, { handled });
+};
+
+export const deleteContactRequest = async (id: string): Promise<void> => {
+  await stpApi.delete(`${CONTACT_REQUESTS_PATH}/${encodeURIComponent(id)}`);
+};
+
 //Invitations (public, for the accept-invitation page)
 export type PublicInvitation = {
   id: string;

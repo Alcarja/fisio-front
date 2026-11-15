@@ -89,6 +89,37 @@ export const useSignOutOtherDevices = () => {
   return useMutation({ mutationFn: api.signOutOtherDevices });
 };
 
+//Contact form (public)
+export const useSendContactRequest = () => {
+  return useMutation({ mutationFn: api.sendContactRequest });
+};
+
+//Contact requests inbox (superadmin only)
+// enabled: the sidebar only asks for them when the user is a superadmin
+export const useContactRequests = (enabled = true) => {
+  return useQuery({
+    queryKey: ["contactRequests"],
+    queryFn: api.getContactRequests,
+    enabled,
+  });
+};
+
+export const useSetContactRequestHandled = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.setContactRequestHandled,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contactRequests"] }),
+  });
+};
+
+export const useDeleteContactRequest = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteContactRequest,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contactRequests"] }),
+  });
+};
+
 //Invitations (public)
 export const useInvitation = (invitationId: string | undefined) => {
   return useQuery({

@@ -6,15 +6,16 @@ const columns = [
   {
     title: "Producto",
     links: [
-      { label: "Agenda", to: paths.home },
-      { label: "Historias clínicas", to: paths.home },
-      { label: "Recordatorios", to: paths.home },
+      { label: "Agenda", to: `${paths.home}#how` },
+      { label: "Equipo y salas", to: `${paths.home}#how` },
+      { label: "Informes", to: `${paths.home}#how` },
     ],
   },
   {
     title: "Empresa",
     links: [
       { label: "Sobre nosotros", to: paths.about },
+      { label: "Contacto", to: paths.contact },
     ],
   },
 ];

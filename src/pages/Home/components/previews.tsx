@@ -1,8 +1,9 @@
-import { Check, Clock, Flame, MessageCircle, Play } from "lucide-react";
+import { CircleAlert, Clock, DoorOpen, Mail, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { treatments, type Treatment } from "./treatments";
 
-// Small, static product mock-ups used in the "How it works" tour
+// Small, static product mock-ups used in the "How it works" tour. Each one
+// shows something the app really does today (keep them that way)
 
 const week: { day: string; blocks: { top: number; h: number; type: Treatment }[] }[] = [
   { day: "Lun", blocks: [{ top: 4, h: 18, type: "physio" }, { top: 30, h: 14, type: "rehab" }, { top: 60, h: 20, type: "massage" }] },
@@ -12,6 +13,7 @@ const week: { day: string; blocks: { top: number; h: number; type: Treatment }[]
   { day: "Vie", blocks: [{ top: 6, h: 16, type: "physio" }, { top: 28, h: 14, type: "rehab" }, { top: 50, h: 18, type: "physio" }] },
 ];
 
+// Agenda: the week, and the check that runs before saving an appointment
 export function SchedulePreview() {
   return (
     <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-lg">
@@ -42,170 +44,164 @@ export function SchedulePreview() {
           </div>
         ))}
       </div>
-      <div className="mt-4 flex items-center gap-3 rounded-xl border border-dashed p-3 text-xs">
-        <span className="size-2 rounded-full bg-coral" />
-        Arrastra para cambiar la cita. El paciente recibe el aviso automáticamente.
-      </div>
-    </div>
-  );
-}
-
-const pain = [8, 7, 7, 5, 4, 3];
-
-export function RecordPreview() {
-  // Higher pain sits higher on the chart
-  const points = pain.map(
-    (p, i) => [(i / (pain.length - 1)) * 260, 8 + (1 - p / 10) * 90] as const,
-  );
-  const path = points.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ");
-
-  return (
-    <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-lg">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-full bg-sand font-display text-xl">
-          LF
+      <div className="mt-4 flex items-start gap-3 rounded-xl border border-dashed p-3 text-xs">
+        <CircleAlert className="mt-px size-4 shrink-0 text-coral" />
+        <span>
+          <span className="font-medium">Laura ya tiene una cita a las 10:30.</span>{" "}
+          <span className="text-muted-foreground">Elige otra hora u otro fisio.</span>
         </span>
-        <div className="flex flex-col">
-          <span className="font-medium">Lucía Fernández</span>
-          <span className="text-xs text-muted-foreground">Lumbalgia · Sesión 6 de 10</span>
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-xl bg-muted/60 p-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Dolor (0–10)</span>
-          <span className="font-medium text-primary">8 → 3</span>
-        </div>
-        <svg viewBox="-6 0 272 110" className="mt-2 h-28 w-full overflow-visible">
-          <path
-            d={`${path} L260 106 L0 106 Z`}
-            className="fill-primary/10"
-          />
-          <path d={path} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="stroke-primary" />
-          {points.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 5 : 3} className={i === points.length - 1 ? "fill-coral" : "fill-primary"} />
-          ))}
-        </svg>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2 text-sm">
-        {[
-          ["S", "Menos rigidez por las mañanas."],
-          ["O", "La flexión lumbar mejora hasta 70°."],
-          ["P", "Progresar a bisagra de cadera con carga la próxima sesión."],
-        ].map(([k, v]) => (
-          <div key={k} className="flex gap-3">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-medium">
-              {k}
-            </span>
-            <span className="text-muted-foreground">{v}</span>
-          </div>
-        ))}
       </div>
     </div>
   );
 }
 
-export function RemindPreview() {
-  return (
-    <div className="w-full max-w-[19rem] rounded-[2.25rem] border-[6px] border-foreground/90 bg-card p-4 shadow-2xl">
-      <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-foreground/15" />
-      <div className="flex items-center gap-2 border-b pb-3">
-        <span className="flex size-8 items-center justify-center rounded-full bg-primary">
-          <MessageCircle className="size-4 text-primary-foreground" />
-        </span>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">Clínica Movimiento</span>
-          <span className="text-[11px] text-muted-foreground">Mensaje automático</span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 py-4 text-sm">
-        <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-3 py-2 motion-safe:animate-rise">
-          ¡Hola, Lucía! Te recordamos tu sesión de mañana a las <b>10:30</b> con Laura.
-          Responde <b>1</b> para confirmar o <b>2</b> para cambiarla.
-        </div>
-        <div
-          className="max-w-[40%] self-end rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-primary-foreground motion-safe:animate-rise"
-          style={{ animationDelay: "500ms" }}
-        >
-          1
-        </div>
-        <div
-          className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-3 py-2 motion-safe:animate-rise"
-          style={{ animationDelay: "1000ms" }}
-        >
-          ¡Perfecto, nos vemos mañana!
-        </div>
-      </div>
-      <div
-        className="flex items-center gap-2 rounded-xl bg-sage px-3 py-2 text-xs motion-safe:animate-rise"
-        style={{ animationDelay: "1500ms" }}
-      >
-        <Check className="size-3.5" /> Confirmada · agenda actualizada
-      </div>
-    </div>
-  );
-}
-
-const exercises = [
-  { name: "Gato-camello", dose: "2 × 10", done: true },
-  { name: "Puente de glúteo", dose: "3 × 12", done: true },
-  { name: "Bird dog", dose: "3 × 8 cada lado", done: false },
+const services = [
+  { name: "Fisioterapia", detail: "45 min · 45 €", type: "physio" as Treatment },
+  { name: "Rehabilitación", detail: "60 min · 50 € · Gimnasio", type: "rehab" as Treatment },
+  { name: "Pilates en grupo", detail: "55 min · hasta 6 pacientes", type: "pilates" as Treatment },
 ];
 
-export function RecoverPreview() {
+const openingHours = [
+  { day: "Lun – Jue", hours: "09:00 – 14:00 · 16:00 – 20:30" },
+  { day: "Viernes", hours: "09:00 – 15:00" },
+  { day: "8 dic", hours: "Cerrado · festivo", closed: true },
+];
+
+// Configuración: services, opening hours and closures
+export function SetupPreview() {
   return (
     <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground">Plan en casa · Lucía</span>
-          <span className="font-medium">Semana 3: estabilidad del core</span>
-        </div>
-        <span className="flex items-center gap-1 rounded-full bg-sand px-2.5 py-1 text-xs font-medium">
-          <Flame className="size-3.5 text-coral" /> 5 días
-        </span>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2">
-        {exercises.map((ex, i) => (
+      <span className="text-xs text-muted-foreground">Servicios</span>
+      <div className="mt-2 flex flex-col gap-2">
+        {services.map((s, i) => (
           <div
-            key={ex.name}
+            key={s.name}
             className="flex items-center gap-3 rounded-xl border p-3 motion-safe:animate-rise"
             style={{ animationDelay: `${i * 90}ms` }}
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-              <Play className="size-4 fill-current" />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-medium">{ex.name}</span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="size-3" /> {ex.dose}
-              </span>
+            <span className={cn("h-8 w-1.5 rounded-full", treatments[s.type].className)} />
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-medium">{s.name}</span>
+              <span className="truncate text-xs text-muted-foreground">{s.detail}</span>
             </div>
-            <span
-              className={cn(
-                "flex size-6 items-center justify-center rounded-full border",
-                ex.done && "border-primary bg-primary text-primary-foreground",
-              )}
-            >
-              {ex.done && <Check className="size-3.5" />}
-            </span>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-1">
-        {["L", "M", "X", "J", "V", "S", "D"].map((d, i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5">
-            <span
-              className={cn(
-                "size-7 rounded-full",
-                i < 5 ? "bg-primary" : i === 5 ? "border-2 border-dashed border-primary" : "bg-muted",
-              )}
-            />
-            <span className="text-[10px] text-muted-foreground">{d}</span>
+      <span className="mt-5 block text-xs text-muted-foreground">Horario</span>
+      <div className="mt-2 flex flex-col divide-y rounded-xl bg-muted/60 px-4">
+        {openingHours.map((h) => (
+          <div key={h.day} className="flex items-center justify-between gap-3 py-2.5 text-xs">
+            <span className="flex items-center gap-2 font-medium">
+              <Clock className="size-3.5 text-muted-foreground" /> {h.day}
+            </span>
+            <span className={cn(h.closed ? "font-medium text-coral" : "text-muted-foreground")}>
+              {h.hours}
+            </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const people = [
+  { initials: "LM", name: "Laura Martín", role: "Fisioterapeuta", className: "bg-sage" },
+  { initials: "CR", name: "Carmen Ruiz", role: "Recepción", className: "bg-sand" },
+  { initials: "IN", name: "Iván Navarro", role: "Administrador", className: "bg-sky" },
+];
+
+// Equipo: members with their role, and a pending invitation
+export function TeamPreview() {
+  return (
+    <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-lg">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          <Users className="size-4 text-primary" /> Equipo
+        </span>
+        <span className="text-xs text-muted-foreground">4 personas</span>
+      </div>
+      <div className="mt-4 flex flex-col divide-y">
+        {people.map((p, i) => (
+          <div
+            key={p.name}
+            className="flex items-center gap-3 py-3 motion-safe:animate-rise"
+            style={{ animationDelay: `${i * 90}ms` }}
+          >
+            <span
+              className={cn(
+                "flex size-9 items-center justify-center rounded-full text-xs font-medium",
+                p.className,
+              )}
+            >
+              {p.initials}
+            </span>
+            <span className="flex-1 text-sm font-medium">{p.name}</span>
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs">{p.role}</span>
+          </div>
+        ))}
+      </div>
+      <div
+        className="mt-3 flex items-center gap-3 rounded-xl border border-dashed p-3 text-xs motion-safe:animate-rise"
+        style={{ animationDelay: "350ms" }}
+      >
+        <Mail className="size-4 shrink-0 text-coral" />
+        <span className="flex-1">
+          Invitación enviada a <span className="font-medium">marta@clinica.com</span>
+        </span>
+        <span className="text-muted-foreground">Fisio</span>
+      </div>
+    </div>
+  );
+}
+
+const byService = [
+  { name: "Fisioterapia", value: 142, type: "physio" as Treatment },
+  { name: "Rehabilitación", value: 88, type: "rehab" as Treatment },
+  { name: "Pilates en grupo", value: 54, type: "pilates" as Treatment },
+  { name: "Masaje", value: 28, type: "massage" as Treatment },
+];
+
+// Informes: the month by service, with the headline numbers
+export function ReportPreview() {
+  const max = Math.max(...byService.map((s) => s.value));
+  return (
+    <div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-lg">
+      <span className="text-xs text-muted-foreground">Noviembre</span>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {[
+          ["312", "citas"],
+          ["268 h", "de sesión"],
+          ["4 %", "ausencias"],
+        ].map(([value, label]) => (
+          <div key={label} className="rounded-xl bg-muted/60 p-3">
+            <span className="block text-xl font-medium tabular-nums">{value}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
+      <span className="mt-5 block text-xs text-muted-foreground">Por servicio</span>
+      <div className="mt-3 flex flex-col gap-3">
+        {byService.map((s, i) => (
+          <div key={s.name} className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2">
+                <span className={cn("size-2.5 rounded-full", treatments[s.type].className)} />
+                {s.name}
+              </span>
+              <span className="font-medium tabular-nums">{s.value}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full origin-left rounded-full bg-primary motion-safe:animate-rise"
+                style={{ width: `${(s.value / max) * 100}%`, animationDelay: `${i * 80}ms` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+        <DoorOpen className="size-3.5" /> También por fisio, y cruzado fisio × servicio
       </div>
     </div>
   );
