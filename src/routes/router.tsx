@@ -19,9 +19,11 @@ import ClinicDetailsPage from "@/pages/Admin/Clinics/[clinicId]/ClinicDetailsPag
 import HomePage from "@/pages/Home/HomePage";
 import AboutPage from "@/pages/About/AboutPage";
 import AdminPage from "@/pages/Admin/AdminPage";
+import AccountPage from "@/pages/Admin/Account/AccountPage";
 import LoginPage from "@/pages/Login/LoginPage";
 import AcceptInvitationPage from "@/pages/AcceptInvitation/AcceptInvitationPage";
 import ResetPasswordPage from "@/pages/ResetPassword/ResetPasswordPage";
+import ForgotPasswordPage from "@/pages/ForgotPassword/ForgotPasswordPage";
 import NotFoundPage from "@/pages/NotFound/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -38,6 +40,7 @@ export const router = createBrowserRouter([
   //No layout, full screen
   { path: paths.login, element: <LoginPage /> },
   { path: paths.acceptInvitation, element: <AcceptInvitationPage /> },
+  { path: paths.forgotPassword, element: <ForgotPasswordPage /> },
   { path: paths.resetPassword, element: <ResetPasswordPage /> },
   {
     path: paths.selectClinic,
@@ -65,6 +68,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminPage /> },
+      // My account: everyone in the panel, no extra rule
+      { path: paths.adminAccount, element: <AccountPage /> },
       // Platform section: superadmins only, everyone else back to /admin
       {
         element: (

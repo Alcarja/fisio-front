@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { Globe, LayoutDashboard, Loader2, LogOut } from "lucide-react";
+import { Globe, LayoutDashboard, Loader2, LogOut, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useMe, useSignOut } from "@/adapters/hook";
 import {
@@ -78,6 +78,13 @@ export default function UserMenu({ area }: Props) {
 
         <DropdownMenuSeparator className="my-1.5" />
 
+        {couldHaveAccess(me, panelAccess) && (
+          <DropdownMenuItem asChild className="gap-2 rounded-lg">
+            <Link to={paths.adminAccount}>
+              <UserRound /> Mi cuenta
+            </Link>
+          </DropdownMenuItem>
+        )}
         {area === "public" && couldHaveAccess(me, panelAccess) && (
           <DropdownMenuItem asChild className="gap-2 rounded-lg">
             <Link to={paths.admin}>

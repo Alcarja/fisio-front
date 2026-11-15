@@ -6,6 +6,7 @@ import {
   ChartColumn,
   LayoutDashboard,
   Settings,
+  UserRound,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -77,6 +78,12 @@ const sections: SidebarSection[] = [
   },
   // Physios and receptionists (access: staffAccess): add their section here
   // when its pages exist
+
+  // Everyone: their own account. Last, apart from the clinic's sections
+  {
+    title: "Personal",
+    items: [{ label: "Mi cuenta", icon: UserRound, to: paths.adminAccount }],
+  },
 ];
 
 function ItemLink({ item, compact = false }: { item: SidebarItem; compact?: boolean }) {

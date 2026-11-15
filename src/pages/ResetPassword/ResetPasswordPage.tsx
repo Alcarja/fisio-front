@@ -73,9 +73,12 @@ export default function ResetPasswordPage() {
                 Enlace no válido
               </h1>
               <p className="text-muted-foreground">
-                El enlace no es correcto o ha caducado. Pide que te envíen uno nuevo.
+                El enlace no es correcto o ha caducado (dura una hora). Pide uno nuevo.
               </p>
-              <Button asChild size="lg" variant="outline" className="mt-2 h-12 w-full rounded-full text-base">
+              <Button asChild size="lg" className="mt-2 h-12 w-full rounded-full text-base">
+                <Link to={paths.forgotPassword}>Pedir un enlace nuevo</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-full text-base">
                 <Link to={paths.login}>Ir a iniciar sesión</Link>
               </Button>
             </div>

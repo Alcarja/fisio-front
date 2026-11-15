@@ -40,6 +40,11 @@ class StpApi {
       throw new Error("No se pudo conectar con el servidor");
     });
 
+    // Better Auth's rate limit (back/src/auth.ts), e.g. too many login attempts
+    if (res.status === 429) {
+      throw new Error("Demasiados intentos seguidos. Espera un minuto y vuelve a probar.");
+    }
+
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       // Our API sends { error: { code, message } }, Better Auth sends { message }

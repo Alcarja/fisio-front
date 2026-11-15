@@ -55,6 +55,40 @@ export const useResetPassword = () => {
   return useMutation({ mutationFn: api.resetPassword });
 };
 
+//My account
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateProfile,
+    // The name shows in the user menu, the team list… reload them
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+        queryClient.invalidateQueries({ queryKey: ["team"] }),
+      ]),
+  });
+};
+
+export const useLoginMethods = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ["loginMethods", userId],
+    queryFn: api.getLoginMethods,
+    enabled: !!userId,
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation({ mutationFn: api.changePassword });
+};
+
+export const useRequestPasswordEmail = () => {
+  return useMutation({ mutationFn: api.requestPasswordEmail });
+};
+
+export const useSignOutOtherDevices = () => {
+  return useMutation({ mutationFn: api.signOutOtherDevices });
+};
+
 //Invitations (public)
 export const useInvitation = (invitationId: string | undefined) => {
   return useQuery({

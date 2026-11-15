@@ -2,8 +2,9 @@
 export const paths = {
   home: "/",
   about: "/about",
-  profile: "/profile",
   admin: "/admin",
+  // The logged-in user's own details and password: every role
+  adminAccount: "/admin/account",
   // Active clinic's appointments calendar: every clinic role
   adminBookings: "/admin/bookings",
   // Active clinic's team: owners and admins only
@@ -24,6 +25,8 @@ export const paths = {
   selectClinic: "/select-clinic",
   // Link sent in invitation emails (public)
   acceptInvitation: "/accept-invitation/:invitationId",
+  // "Forgot password" (public): asks for the email and sends the link
+  forgotPassword: "/forgot-password",
   // Link sent in password emails (public): new members and "forgot password"
   resetPassword: "/reset-password",
 } as const;

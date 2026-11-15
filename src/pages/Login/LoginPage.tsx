@@ -80,7 +80,17 @@ export default function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <div className="flex items-baseline justify-between gap-3">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Link
+                    to={paths.forgotPassword}
+                    // Carry over the email so it doesn't have to be typed again
+                    state={{ email }}
+                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                  >
+                    ¿La has olvidado?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"

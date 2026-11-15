@@ -108,6 +108,61 @@ export const resetPassword = async (
   return stpApi.post("/api/auth/reset-password", data);
 };
 
+//My account (the logged-in user, any role). All Better Auth endpoints: they
+//act on the session's user, never on an id sent by the browser
+
+export type ProfileUpdate = { name: string };
+
+export const updateProfile = async (data: ProfileUpdate): Promise<unknown> => {
+  return stpApi.post("/api/auth/update-user", data);
+};
+
+// How the user can log in: "credential" (email + password), "google"…
+export type LoginMethod = { id: string; providerId: string; createdAt: string };
+
+export const getLoginMethods = async (): Promise<LoginMethod[]> => {
+  return stpApi.get("/api/auth/list-accounts");
+};
+
+export type PasswordChange = {
+  currentPassword: string;
+  newPassword: string;
+  // Log out every other device (this one stays logged in)
+  revokeOtherSessions: boolean;
+};
+
+// Better Auth answers in English: the errors a user can cause, in Spanish
+const passwordErrors: Record<string, string> = {
+  "Invalid password": "La contraseña actual no es correcta",
+  "Password too short": "La nueva contraseña es demasiado corta",
+  "Password too long": "La nueva contraseña es demasiado larga",
+  "Credential account not found": "Tu cuenta no tiene contraseña todavía",
+};
+
+export const changePassword = async (data: PasswordChange): Promise<unknown> => {
+  try {
+    return await stpApi.post("/api/auth/change-password", data);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    throw new Error(passwordErrors[message] ?? (message || "No se pudo cambiar la contraseña"));
+  }
+};
+
+// Emails a link to choose a new password: "forgot password", and accounts
+// without one (e.g. Google only). The link opens /reset-password.
+// Better Auth answers the same whether the email exists or not, so nobody can
+// use this to find out who has an account
+export const requestPasswordEmail = async (email: string): Promise<unknown> => {
+  return stpApi.post("/api/auth/request-password-reset", {
+    email,
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+};
+
+export const signOutOtherDevices = async (): Promise<unknown> => {
+  return stpApi.post("/api/auth/revoke-other-sessions", {});
+};
+
 //Invitations (public, for the accept-invitation page)
 export type PublicInvitation = {
   id: string;
