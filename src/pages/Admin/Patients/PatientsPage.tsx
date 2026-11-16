@@ -1,12 +1,26 @@
 import { useState } from "react";
 import { generatePath, Link, useNavigate } from "react-router";
-import { BookUser, ChevronRight, CircleAlert, Loader2, Plus, Search, SearchX, X } from "lucide-react";
+import {
+  BookUser,
+  ChevronRight,
+  CircleAlert,
+  Download,
+  Loader2,
+  Plus,
+  Search,
+  SearchX,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { getClinicExport } from "@/adapters/api";
 import { useMe, usePatients } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { hasAccess, teamAccess } from "@/lib/roles";
 import { useDebounced } from "@/lib/useDebounced";
 import { paths } from "@/routes/paths";
 import PatientDialog from "./components/PatientDialog";
+import { downloadJson, fileSlug } from "./patientExport";
 
 // How many patients each "Cargar más" adds (same as the backend's default)
 const PAGE_SIZE = 50;
@@ -33,6 +47,24 @@ export default function PatientsPage() {
   const patients = data?.patients ?? [];
   const total = data?.total ?? 0;
 
+  // Owners and admins: every ficha, clinical history and appointment in one
+  // file, for the clinic's own copy or to take its data elsewhere
+  const [exporting, setExporting] = useState(false);
+  const exportAll = async () => {
+    setExporting(true);
+    try {
+      const data = await getClinicExport();
+      downloadJson(
+        `${fileSlug(data.clinic.name)}-pacientes-${new Date().toLocaleDateString("sv-SE")}.json`,
+        data,
+      );
+    } catch (error) {
+      toast.error("No se pudieron exportar los datos", { description: (error as Error).message });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // A new search starts again from the first page
   const changeQuery = (value: string) => {
     setQuery(value);
@@ -53,9 +85,21 @@ export default function PatientsPage() {
             La ficha de cada paciente, con sus datos y sus citas.
           </p>
         </div>
-        <Button className="w-fit rounded-full" onClick={() => setCreating(true)}>
-          <Plus /> Nuevo paciente
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {hasAccess(me, teamAccess) && (
+            <Button
+              variant="outline"
+              className="w-fit rounded-full"
+              onClick={exportAll}
+              disabled={exporting}
+            >
+              {exporting ? <Loader2 className="animate-spin" /> : <Download />} Exportar todo
+            </Button>
+          )}
+          <Button className="w-fit rounded-full" onClick={() => setCreating(true)}>
+            <Plus /> Nuevo paciente
+          </Button>
+        </div>
       </header>
 
       <section className="flex flex-col gap-5 rounded-[1.75rem] border bg-card p-6">

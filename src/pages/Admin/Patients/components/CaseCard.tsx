@@ -259,7 +259,7 @@ export default function CaseCard({
         open={dialog === "delete"}
         onOpenChange={(open) => !open && setDialog(null)}
         title="¿Eliminar este expediente?"
-        description={`«${c.title}» no tiene notas de evolución. No se puede deshacer.`}
+        description={`«${c.title}» no tiene notas de evolución. Dejará de verse en la ficha; lo que decía se conserva en el registro.`}
         confirmLabel="Eliminar"
         onConfirm={deleteIt}
         pending={remove.isPending}
@@ -282,7 +282,8 @@ function PainBadge({ level }: { level: number }) {
 }
 
 // One evolution note in the timeline. Its author (or an owner or admin) can
-// correct or delete it while the expediente is open
+// correct or delete it while the expediente is open. Neither loses anything:
+// the backend keeps what the note said (the ficha's Registro shows it)
 function NoteItem({
   caseRef,
   note,
@@ -365,7 +366,7 @@ function NoteItem({
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title="¿Eliminar esta nota?"
-        description={`La nota del ${formatDate(note.date)} se borrará del expediente. No se puede deshacer.`}
+        description={`La nota del ${formatDate(note.date)} dejará de verse en el expediente. Se conserva en el registro de la historia clínica y en las exportaciones.`}
         confirmLabel="Eliminar nota"
         onConfirm={() =>
           remove.mutate(ref, {

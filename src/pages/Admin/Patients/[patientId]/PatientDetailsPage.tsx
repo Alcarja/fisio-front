@@ -1,17 +1,33 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, CalendarDays, CircleAlert, Loader2, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CircleAlert,
+  Download,
+  Loader2,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
-import type { PatientAppointment, PatientDetails } from "@/adapters/api";
+import { getPatientExport, type PatientAppointment, type PatientDetails } from "@/adapters/api";
 import { useDeletePatient, useMe, usePatient } from "@/adapters/hook";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { clinicalAccess, hasAccess, teamAccess } from "@/lib/roles";
 import { paths } from "@/routes/paths";
 import { statusLabels } from "../../Bookings/calendarUtils";
+import ClinicalLog from "../components/ClinicalLog";
 import ClinicalRecord from "../components/ClinicalRecord";
 import PatientDialog from "../components/PatientDialog";
+import { downloadFile, downloadJson, fileSlug, patientReportHtml } from "../patientExport";
 
 // "2026-11-16" -> local Date (to format it)
 const toDate = (iso: string) => {
@@ -39,8 +55,9 @@ function ageOf(birthDate: string) {
 }
 
 // Every clinic role: one patient's ficha. Top to bottom: the clinical history
-// (alert, expedientes, antecedentes; not for receptionists), personal data and
-// appointments. Deleting it is for owners and admins (the backend checks it too)
+// (alert, expedientes, antecedentes; not for receptionists), personal data,
+// appointments and, for owners and admins, the record of who opened the history.
+// Deleting it is for owners and admins (the backend checks it too)
 export default function PatientDetailsPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
@@ -53,6 +70,25 @@ export default function PatientDetailsPage() {
   const canDelete = hasAccess(me, teamAccess);
   // Historia clínica: physios, owners and admins. Receptionists see the rest
   const canSeeClinical = hasAccess(me, clinicalAccess);
+  // The record of accesses and changes: owners and admins
+  const canSeeLog = canDelete && canSeeClinical;
+
+  // Everything the clinic holds about this patient, as a file to give them:
+  // a document to read or print, or the raw data
+  const [exporting, setExporting] = useState(false);
+  const exportAs = async (format: "html" | "json") => {
+    setExporting(true);
+    try {
+      const data = await getPatientExport(patientId!);
+      const name = `${fileSlug(`${data.patient.lastName} ${data.patient.firstName}`)}-${data.exportedAt.slice(0, 10)}`;
+      if (format === "html") downloadFile(`${name}.html`, patientReportHtml(data), "text/html");
+      else downloadJson(`${name}.json`, data);
+    } catch (error) {
+      toast.error("No se pudieron exportar los datos", { description: (error as Error).message });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const deleteIt = () =>
     remove.mutate(patientId!, {
@@ -99,10 +135,28 @@ export default function PatientDetailsPage() {
                 Ficha creada el {createdFormat.format(new Date(patient.createdAt))}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" className="rounded-full" onClick={() => setEditing(true)}>
                 <Pencil /> Editar
               </Button>
+              {/* It carries the clinical history: clinical roles only */}
+              {canSeeClinical && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="rounded-full" disabled={exporting}>
+                      {exporting ? <Loader2 className="animate-spin" /> : <Download />} Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => exportAs("html")}>
+                      Documento para leer o imprimir
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => exportAs("json")}>
+                      Datos en formato JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {canDelete && (
                 <Button
                   variant="outline"
@@ -151,6 +205,15 @@ export default function PatientDetailsPage() {
           </Section>
 
           <Appointments patient={patient} />
+
+          {canSeeLog && (
+            <Section
+              title="Registro"
+              description="Quién ha visto, cambiado o exportado la historia clínica. Solo lo ven el propietario y los administradores."
+            >
+              <ClinicalLog patientId={patient.id} />
+            </Section>
+          )}
 
           {editing && <PatientDialog patient={patient} onClose={() => setEditing(false)} />}
           <ConfirmDialog

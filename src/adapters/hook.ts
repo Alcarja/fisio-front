@@ -607,6 +607,20 @@ export const usePatientClinical = (
   });
 };
 
+// Owners and admins. Under the "patientClinical" key, so every change to the
+// history reloads it too
+export const useClinicalLog = (
+  activeClinicId: string | undefined,
+  patientId: string | undefined,
+  enabled: boolean,
+) => {
+  return useQuery({
+    queryKey: ["patientClinical", activeClinicId, patientId, "log"],
+    queryFn: () => api.getClinicalLog(patientId!),
+    enabled: !!activeClinicId && !!patientId && enabled,
+  });
+};
+
 // Every change reloads the patient's whole clinical history
 const useClinicalMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<void>) => {
   const queryClient = useQueryClient();

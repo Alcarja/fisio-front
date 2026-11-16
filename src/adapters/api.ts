@@ -1227,11 +1227,78 @@ export const updateCaseNote = async ({
   await stpApi.patch(notePath(ref, noteId), changes);
 };
 
+// The note stops showing in the expediente; the backend keeps it (marked)
 export const deleteCaseNote = async ({
   noteId,
   ...ref
 }: CaseRef & { noteId: string }): Promise<void> => {
   await stpApi.delete(notePath(ref, noteId));
+};
+
+// Registro: who saw, changed or exported a patient's history (owners and admins)
+export type ClinicalLogEntry = {
+  id: string;
+  at: string;
+  userName: string;
+  action: "view" | "create" | "update" | "delete" | "export";
+  entity: "record" | "background" | "case" | "note" | "clinic";
+  entityId: string | null;
+  // Changes: the fields that changed and the values they had before
+  fields: string[] | null;
+  previous: Record<string, unknown> | null;
+};
+
+export const getClinicalLog = async (patientId: string): Promise<ClinicalLogEntry[]> => {
+  const { entries } = await stpApi.get(`${patientPath(patientId)}/log`);
+  return entries;
+};
+
+// Export: everything the clinic holds about one patient, deleted notes included
+export type ExportedNote = {
+  id: string;
+  date: string;
+  painLevel: number | null;
+  text: string;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type ExportedCase = Omit<PatientCase, "physio" | "notes"> & {
+  physioName: string | null;
+  createdAt: string;
+  notes: ExportedNote[]; // oldest first
+};
+
+export type ExportedAppointment = {
+  appointmentId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus;
+  attendance: AppointmentPatient["attendance"];
+  serviceName: string;
+  physioName: string;
+};
+
+export type PatientExport = {
+  exportedAt: string;
+  clinic: { id: string; name: string };
+  patient: Patient &
+    ClinicalBackground & {
+      cases: ExportedCase[];
+      appointments: ExportedAppointment[]; // oldest first
+    };
+};
+
+export const getPatientExport = async (patientId: string): Promise<PatientExport> => {
+  return stpApi.get(`${patientPath(patientId)}/export`);
+};
+
+// Every ficha, clinical history and appointment of the clinic (owners and admins)
+export const getClinicExport = async (): Promise<{ clinic: { name: string } }> => {
+  return stpApi.get(`${PATIENTS_PATH}/export`);
 };
 
 //Appointments (Reservas). Every role of the active clinic; deleting: owners and admins

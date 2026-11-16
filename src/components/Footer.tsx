@@ -18,6 +18,14 @@ const columns = [
       { label: "Contacto", to: paths.contact },
     ],
   },
+  {
+    title: "Legal",
+    links: [
+      { label: "Aviso legal", to: paths.legalNotice },
+      { label: "Política de privacidad", to: paths.privacy },
+      { label: "Política de cookies", to: paths.cookies },
+    ],
+  },
 ];
 
 const year = new Date().getFullYear();
@@ -25,7 +33,7 @@ const year = new Date().getFullYear();
 export default function Footer() {
   return (
     <footer className="mt-24 border-t">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 md:grid-cols-[2fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-4">
           <Logo animated={false} />
           <p className="max-w-xs text-sm text-muted-foreground">

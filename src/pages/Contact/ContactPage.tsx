@@ -244,7 +244,16 @@ export default function ContactPage() {
                   className="mt-0.5"
                 />
                 <Label htmlFor="contact-privacy" className="text-sm leading-snug font-normal text-muted-foreground">
-                  Acepto que Kineflow use estos datos solo para responder a mi solicitud.
+                  Acepto que Kineflow use estos datos solo para responder a mi solicitud, como
+                  explica la{" "}
+                  <Link
+                    to={paths.privacy}
+                    target="_blank"
+                    className="text-foreground underline underline-offset-4"
+                  >
+                    política de privacidad
+                  </Link>
+                  .
                 </Label>
               </div>
 

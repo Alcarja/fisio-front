@@ -31,6 +31,9 @@ import ClinicDetailsPage from "@/pages/Admin/Clinics/[clinicId]/ClinicDetailsPag
 import HomePage from "@/pages/Home/HomePage";
 import AboutPage from "@/pages/About/AboutPage";
 import ContactPage from "@/pages/Contact/ContactPage";
+import PrivacyPage from "@/pages/Legal/PrivacyPage";
+import LegalNoticePage from "@/pages/Legal/LegalNoticePage";
+import CookiesPage from "@/pages/Legal/CookiesPage";
 import AdminPage from "@/pages/Admin/AdminPage";
 import AccountPage from "@/pages/Admin/Account/AccountPage";
 import LoginPage from "@/pages/Login/LoginPage";
@@ -49,6 +52,9 @@ export const router = createBrowserRouter([
       { path: paths.home, element: <HomePage /> },
       { path: paths.about, element: <AboutPage /> },
       { path: paths.contact, element: <ContactPage /> },
+      { path: paths.privacy, element: <PrivacyPage /> },
+      { path: paths.legalNotice, element: <LegalNoticePage /> },
+      { path: paths.cookies, element: <CookiesPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

@@ -4,6 +4,10 @@ export const paths = {
   about: "/about",
   // Public contact form for clinics interested in Kineflow
   contact: "/contacto",
+  // Public legal pages (footer). The details of who Kineflow is: lib/legalEntity.json
+  privacy: "/privacidad",
+  legalNotice: "/aviso-legal",
+  cookies: "/cookies",
   admin: "/admin",
   // The logged-in user's own details and password: every role
   adminAccount: "/admin/account",

@@ -323,7 +323,14 @@ export default function PublicBookingPage() {
                     className="mt-0.5"
                   />
                   <Label htmlFor="booking-consent" className="font-normal leading-snug">
-                    Acepto que {booking.clinic.name} use estos datos para gestionar mi cita.
+                    Acepto que {booking.clinic.name} use estos datos para gestionar mi cita.{" "}
+                    <Link
+                      to={`${paths.privacy}#pacientes`}
+                      target="_blank"
+                      className="underline underline-offset-4"
+                    >
+                      Más información
+                    </Link>
                   </Label>
                 </div>
 
