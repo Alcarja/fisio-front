@@ -1,4 +1,4 @@
-import type { TimeRange, Weekday } from "@/adapters/api";
+import type { OpeningHours, TimeRange, Weekday } from "@/adapters/api";
 
 // ISO weekdays, Monday first
 export const weekdays: { value: Weekday; label: string; short: string }[] = [
@@ -14,6 +14,25 @@ export const weekdays: { value: Weekday; label: string; short: string }[] = [
 // "HH:MM" strings compare correctly as text
 export const sortRanges = <T extends TimeRange>(ranges: T[]) =>
   [...ranges].sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+// A week being edited: each day's slots (none = closed)
+export type Week = Record<Weekday, TimeRange[]>;
+
+export const toWeek = (hours: OpeningHours[]): Week => {
+  const week = Object.fromEntries(weekdays.map((d) => [d.value, []])) as unknown as Week;
+  for (const { weekday, startTime, endTime } of hours) week[weekday].push({ startTime, endTime });
+  for (const d of weekdays) week[d.value] = sortRanges(week[d.value]);
+  return week;
+};
+
+export const toHours = (week: Week): OpeningHours[] =>
+  weekdays.flatMap((d) => sortRanges(week[d.value]).map((r) => ({ weekday: d.value, ...r })));
+
+export const weekErrors = (week: Week) =>
+  Object.fromEntries(weekdays.map((d) => [d.value, rangesError(week[d.value])])) as Record<
+    Weekday,
+    string | null
+  >;
 
 // Problem with a day's slots, or null if they're fine:
 // every slot must start before it ends, and slots can't overlap

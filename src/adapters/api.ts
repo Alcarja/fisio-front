@@ -20,7 +20,7 @@ export type Membership = {
 
 // Optional features a superadmin switches on per clinic (off by default).
 // Mirrors back/src/lib/features.ts; labels for the panel in lib/features.ts
-export type ClinicFeature = "invoicing" | "clinical_history";
+export type ClinicFeature = "invoicing" | "clinical_history" | "online_booking";
 
 // GET /me response
 export type Me = {
@@ -656,6 +656,195 @@ export const deleteScheduleException = async (id: string): Promise<void> => {
   await stpApi.delete(`${SCHEDULE_PATH}/exceptions/${encodeURIComponent(id)}`);
 };
 
+//Online booking (Configuración → Reserva online). Owners and admins of the
+// active clinic, and only if a superadmin switched "online_booking" on for it
+
+// A member who can attend appointments, with the weekly slots in which they
+// accept online bookings. No slots = can't be booked online
+export type BookingProfessional = {
+  memberId: string;
+  userId: string;
+  name: string;
+  image: string | null;
+  role: ClinicRole;
+  weeklyHours: OpeningHours[];
+};
+
+// What a clinic decides about its online bookings. They don't apply to
+// appointments given from the calendar. Same as back/src/lib/onlineBooking.ts
+export type BookingRules = {
+  // Booking: not sooner than this from now, not further than this ahead, and
+  // start times offered every this many minutes
+  minNoticeMinutes: number;
+  maxDaysAhead: number;
+  slotStepMinutes: number;
+  // Cancelling: whether patients can do it with their link, and until how many
+  // hours before the appointment (0 = until it starts)
+  cancelEnabled: boolean;
+  cancelNoticeHours: number;
+  // Free text patients see when booking and in the confirmation email
+  policyText: string | null;
+  // Where the clinic is told about each online booking or cancellation, and
+  // where patients' replies to their confirmation email go. null = nobody
+  notifyEmail: string | null;
+};
+
+export type OnlineBooking = {
+  // The clinic's own switch
+  enabled: boolean;
+  rules: BookingRules;
+  // The clinic's weekly hours: bookings are only offered inside them
+  clinicHours: OpeningHours[];
+  professionals: BookingProfessional[];
+};
+
+// All under /clinic/settings/online-booking. The clinic is the session's active one
+const ONLINE_BOOKING_PATH = "/api/clinic/settings/online-booking";
+
+// GET -> { enabled, clinicHours, professionals }
+export const getOnlineBooking = async (): Promise<OnlineBooking> => {
+  return stpApi.get(ONLINE_BOOKING_PATH);
+};
+
+// PATCH -> { enabled }
+export const setOnlineBookingEnabled = async (enabled: boolean): Promise<void> => {
+  await stpApi.patch(ONLINE_BOOKING_PATH, { enabled });
+};
+
+// PUT /rules -> { rules }. The booking and cancellation criteria, all at once
+export const updateBookingRules = async (rules: BookingRules): Promise<void> => {
+  await stpApi.put(`${ONLINE_BOOKING_PATH}/rules`, rules);
+};
+
+// PUT /professionals/:memberId/hours -> 204. Replaces that professional's whole week
+export const updateBookingHours = async ({
+  memberId,
+  weeklyHours,
+}: {
+  memberId: string;
+  weeklyHours: OpeningHours[];
+}): Promise<void> => {
+  await stpApi.put(
+    `${ONLINE_BOOKING_PATH}/professionals/${encodeURIComponent(memberId)}/hours`,
+    { weeklyHours },
+  );
+};
+
+//Public booking page (/reservar/:slug). No login: the patient's side of online
+// booking. Backend: back/src/controllers/publicBooking.controller.ts
+
+export type PublicBooking = {
+  clinic: { name: string; logo: string | null };
+  // Individual, active services
+  services: { id: string; name: string; durationMinutes: number; priceCents: number }[];
+  // Only professionals open to online bookings
+  professionals: { id: string; name: string; image: string | null }[];
+  // The clinic's date today, and the last date that can be booked ("YYYY-MM-DD")
+  today: string;
+  lastDate: string;
+  cancellation: PublicCancellation;
+};
+
+// What the patient needs to know about cancelling
+export type PublicCancellation = Pick<
+  BookingRules,
+  "cancelEnabled" | "cancelNoticeHours" | "policyText"
+>;
+
+export type PublicSlotsDay = { date: string; times: string[] };
+
+export type PublicSlotsQuery = {
+  slug: string;
+  serviceId: string;
+  // Leave out for anyone available
+  professionalId?: string;
+  from: string;
+  to: string;
+};
+
+export type NewPublicBooking = {
+  slug: string;
+  serviceId: string;
+  date: string;
+  time: string;
+  professionalId: string | null;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  notes?: string;
+  consent: boolean;
+  // Trap for bots: hidden in the form, must stay empty
+  website?: string;
+};
+
+export type PublicBookingConfirmation = {
+  // The key of the patient's own page for this appointment
+  token: string;
+  clinicName: string;
+  serviceName: string;
+  professionalName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+};
+
+const publicBookingPath = (slug: string) => `/api/public/booking/${encodeURIComponent(slug)}`;
+
+// GET -> 404 if the clinic doesn't accept online bookings
+export const getPublicBooking = async (slug: string): Promise<PublicBooking> => {
+  return stpApi.get(publicBookingPath(slug));
+};
+
+// GET /slots -> the free times of each date in [from, to]
+export const getPublicSlots = async ({
+  slug,
+  serviceId,
+  professionalId,
+  from,
+  to,
+}: PublicSlotsQuery): Promise<PublicSlotsDay[]> => {
+  const { days } = await stpApi.get(`${publicBookingPath(slug)}/slots`, {
+    params: { serviceId, from, to, ...(professionalId ? { professionalId } : {}) },
+  });
+  return days;
+};
+
+// POST /appointments -> 201 { booking }. Refused (409) if the time was just taken
+export const createPublicBooking = async ({
+  slug,
+  ...data
+}: NewPublicBooking): Promise<PublicBookingConfirmation> => {
+  const { booking } = await stpApi.post(`${publicBookingPath(slug)}/appointments`, data);
+  return booking;
+};
+
+// The patient's own appointment, opened with the link they got when booking
+export type PatientBooking = Omit<PublicBookingConfirmation, "token"> & {
+  cancelled: boolean;
+  canCancel: boolean;
+  // Why it can't be cancelled online (null if it can)
+  cancelBlocked: "ALREADY_CANCELLED" | "FINISHED" | "NOT_ALLOWED" | "TOO_LATE" | null;
+  cancellation: PublicCancellation;
+};
+
+export type PatientBookingRef = { slug: string; token: string };
+
+const patientBookingPath = ({ slug, token }: PatientBookingRef) =>
+  `${publicBookingPath(slug)}/appointments/${encodeURIComponent(token)}`;
+
+// GET -> { booking }. 404 if the link isn't a real appointment
+export const getPatientBooking = async (ref: PatientBookingRef): Promise<PatientBooking> => {
+  const { booking } = await stpApi.get(patientBookingPath(ref));
+  return booking;
+};
+
+// POST /cancel -> { booking }. Refused (409) outside the clinic's criteria
+export const cancelPatientBooking = async (ref: PatientBookingRef): Promise<PatientBooking> => {
+  const { booking } = await stpApi.post(`${patientBookingPath(ref)}/cancel`, {});
+  return booking;
+};
+
 //Rooms (Configuración → Salas). Owners and admins of the active clinic
 // Same fields as back/src/db/room-schema.ts
 
@@ -1068,6 +1257,11 @@ export type Appointment = {
   status: AppointmentStatus;
   cancellationReason: string | null;
   notes: string | null;
+  // "online": the patient booked it with the clinic's link or QR, and left a
+  // phone and an email
+  source: "staff" | "online";
+  contactPhone: string | null;
+  contactEmail: string | null;
   service: { id: string; name: string; color: string; isGroup: boolean; maxPatients: number };
   room: { id: string; name: string };
   physio: { userId: string; name: string };

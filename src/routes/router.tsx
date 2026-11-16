@@ -8,6 +8,7 @@ import RequireActiveClinic from "./RequireActiveClinic";
 import SelectClinicPage from "@/pages/SelectClinic/SelectClinicPage";
 import {
   bookingsAccess,
+  onlineBookingAccess,
   panelAccess,
   patientsAccess,
   superadminAccess,
@@ -22,6 +23,7 @@ import SettingsLayout from "@/pages/Admin/Settings/SettingsLayout";
 import SchedulePage from "@/pages/Admin/Settings/Schedule/SchedulePage";
 import RoomsPage from "@/pages/Admin/Settings/Rooms/RoomsPage";
 import ServicesPage from "@/pages/Admin/Settings/Services/ServicesPage";
+import OnlineBookingPage from "@/pages/Admin/Settings/OnlineBooking/OnlineBookingPage";
 import ClinicsPage from "@/pages/Admin/Clinics/ClinicsPage";
 import BillingPage from "@/pages/Admin/Billing/BillingPage";
 import RequestsPage from "@/pages/Admin/Requests/RequestsPage";
@@ -35,6 +37,8 @@ import LoginPage from "@/pages/Login/LoginPage";
 import AcceptInvitationPage from "@/pages/AcceptInvitation/AcceptInvitationPage";
 import ResetPasswordPage from "@/pages/ResetPassword/ResetPasswordPage";
 import ForgotPasswordPage from "@/pages/ForgotPassword/ForgotPasswordPage";
+import PublicBookingPage from "@/pages/PublicBooking/PublicBookingPage";
+import ManageBookingPage from "@/pages/PublicBooking/ManageBookingPage";
 import NotFoundPage from "@/pages/NotFound/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -51,6 +55,9 @@ export const router = createBrowserRouter([
 
   //No layout, full screen
   { path: paths.login, element: <LoginPage /> },
+  // A clinic's own booking page for its patients: no Kineflow navbar
+  { path: paths.publicBooking, element: <PublicBookingPage /> },
+  { path: paths.publicBookingManage, element: <ManageBookingPage /> },
   { path: paths.acceptInvitation, element: <AcceptInvitationPage /> },
   { path: paths.forgotPassword, element: <ForgotPasswordPage /> },
   { path: paths.resetPassword, element: <ResetPasswordPage /> },
@@ -116,6 +123,15 @@ export const router = createBrowserRouter([
               { path: paths.adminSettingsSchedule, element: <SchedulePage /> },
               { path: paths.adminSettingsRooms, element: <RoomsPage /> },
               { path: paths.adminSettingsServices, element: <ServicesPage /> },
+              // Only if a superadmin switched the feature on for the clinic
+              {
+                path: paths.adminSettingsOnlineBooking,
+                element: (
+                  <RequireRole access={onlineBookingAccess} redirectTo={paths.adminSettings}>
+                    <OnlineBookingPage />
+                  </RequireRole>
+                ),
+              },
             ],
           },
         ],

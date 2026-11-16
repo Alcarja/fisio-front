@@ -22,6 +22,8 @@ export const paths = {
   adminSettingsSchedule: "/admin/settings/schedule",
   adminSettingsRooms: "/admin/settings/rooms",
   adminSettingsServices: "/admin/settings/services",
+  // Only in clinics with the "online_booking" feature
+  adminSettingsOnlineBooking: "/admin/settings/online-booking",
   // Superadmin only
   adminClinics: "/admin/clinics",
   // Superadmin only: requests sent from the website's contact form
@@ -30,6 +32,12 @@ export const paths = {
   adminBilling: "/admin/billing",
   // Build real links with generatePath(paths.adminClinic, { clinicId })
   adminClinic: "/admin/clinics/:clinicId",
+  // Public: patients book their own appointment in a clinic (its link or QR).
+  // Build real links with generatePath(paths.publicBooking, { slug })
+  publicBooking: "/reservar/:slug",
+  // Public: a patient's own appointment, to see or cancel it. The link is in
+  // their confirmation email
+  publicBookingManage: "/reservar/:slug/cita/:token",
   login: "/login",
   // Choose which clinic to work on (users in several clinics)
   selectClinic: "/select-clinic",

@@ -357,6 +357,82 @@ export const useUpdateClinicTimezone = () => useScheduleMutation(api.updateClini
 export const useCreateScheduleException = () => useScheduleMutation(api.createScheduleException);
 export const useDeleteScheduleException = () => useScheduleMutation(api.deleteScheduleException);
 
+//Online booking settings (owners and admins of the active clinic)
+export const useOnlineBooking = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["onlineBooking", activeClinicId],
+    queryFn: api.getOnlineBooking,
+    enabled: !!activeClinicId,
+  });
+};
+
+// After any change, reload the settings
+const useOnlineBookingMutation = <TVariables, TResult>(
+  mutationFn: (variables: TVariables) => Promise<TResult>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["onlineBooking"] }),
+  });
+};
+
+export const useSetOnlineBookingEnabled = () =>
+  useOnlineBookingMutation(api.setOnlineBookingEnabled);
+export const useUpdateBookingHours = () => useOnlineBookingMutation(api.updateBookingHours);
+export const useUpdateBookingRules = () => useOnlineBookingMutation(api.updateBookingRules);
+
+//Public booking page (no login)
+export const usePublicBooking = (slug: string | undefined) => {
+  return useQuery({
+    queryKey: ["publicBooking", slug],
+    queryFn: () => api.getPublicBooking(slug!),
+    enabled: !!slug,
+    // A 404 means the clinic doesn't take online bookings: no point retrying
+    retry: false,
+  });
+};
+
+// Free times for a service in a range of dates. Leave serviceId out to wait
+export const usePublicSlots = (query: Partial<api.PublicSlotsQuery>) => {
+  const { slug, serviceId, professionalId, from, to } = query;
+  return useQuery({
+    queryKey: ["publicSlots", slug, serviceId, professionalId ?? null, from, to],
+    queryFn: () => api.getPublicSlots(query as api.PublicSlotsQuery),
+    enabled: !!slug && !!serviceId && !!from && !!to,
+  });
+};
+
+// Whether it works or not, the free times have changed: load them again
+export const useCreatePublicBooking = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createPublicBooking,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["publicSlots"] }),
+  });
+};
+
+// The patient's own appointment (the link they got when booking)
+export const usePatientBooking = (ref: Partial<api.PatientBookingRef>) => {
+  return useQuery({
+    queryKey: ["patientBooking", ref.slug, ref.token],
+    queryFn: () => api.getPatientBooking(ref as api.PatientBookingRef),
+    enabled: !!ref.slug && !!ref.token,
+    retry: false,
+  });
+};
+
+export const useCancelPatientBooking = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.cancelPatientBooking,
+    onSuccess: (booking, { slug, token }) =>
+      queryClient.setQueryData(["patientBooking", slug, token], booking),
+    // Refused: the page may be showing old criteria, load it again
+    onError: () => queryClient.invalidateQueries({ queryKey: ["patientBooking"] }),
+  });
+};
+
 //Rooms (owners and admins of the active clinic)
 export const useClinicRooms = (activeClinicId: string | undefined) => {
   return useQuery({

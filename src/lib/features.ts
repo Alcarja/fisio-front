@@ -22,4 +22,10 @@ export const clinicFeatures: {
     description:
       "La sección Pacientes: fichas con sus datos, expedientes y notas de evolución, y enlazar las citas a cada ficha. Sin ella, en las citas solo se escribe nombre y apellidos. Incluye datos de salud: actívala cuando la clínica tenga firmados el encargo del tratamiento y el anexo de datos de salud.",
   },
+  {
+    key: "online_booking",
+    label: "Reserva online",
+    description:
+      "Los pacientes piden cita ellos mismos con un enlace o un QR. Aquí solo se pone a disposición de la clínica: después la clínica la enciende o apaga en Configuración → Reserva online y elige el horario de cada profesional. Si se desactiva aquí, deja de funcionar aunque la clínica la tenga encendida.",
+  },
 ];

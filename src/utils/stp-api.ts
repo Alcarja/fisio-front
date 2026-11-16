@@ -59,7 +59,10 @@ class StpApi {
       errorData?.error?.message ??
       (typeof errorData?.error === "string" ? errorData.error : undefined) ??
       errorData?.message;
-    throw new Error(message || "Error en la solicitud");
+    // `code` lets a page react to one specific error (e.g. "SLOT_TAKEN")
+    throw Object.assign(new Error(message || "Error en la solicitud"), {
+      code: typeof errorData?.error?.code === "string" ? errorData.error.code : undefined,
+    });
   }
 
   // Sends a file as the request body (with its own type), and details about it

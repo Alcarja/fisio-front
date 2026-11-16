@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Clock,
   DoorOpen,
+  Globe,
   Loader2,
   NotebookPen,
   Pencil,
@@ -276,6 +277,26 @@ export default function BookingDetailsDialog({
                 <Detail icon={<DoorOpen />} label="Sala">
                   {appointment.room.name}
                 </Detail>
+                {appointment.source === "online" && (
+                  <Detail icon={<Globe />} label="Reserva online">
+                    <span className="flex flex-col gap-0.5">
+                      <span>Reservada por el paciente</span>
+                      {appointment.contactPhone && (
+                        <a href={`tel:${appointment.contactPhone}`} className="hover:underline">
+                          {appointment.contactPhone}
+                        </a>
+                      )}
+                      {appointment.contactEmail && (
+                        <a
+                          href={`mailto:${appointment.contactEmail}`}
+                          className="break-all hover:underline"
+                        >
+                          {appointment.contactEmail}
+                        </a>
+                      )}
+                    </span>
+                  </Detail>
+                )}
                 {appointment.notes && (
                   <Detail icon={<NotebookPen />} label="Notas">
                     {appointment.notes}
