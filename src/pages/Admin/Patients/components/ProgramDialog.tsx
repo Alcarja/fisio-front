@@ -152,7 +152,7 @@ export default function ProgramDialog({ patientId, caseId, mode, current, templa
             <DialogTitle>{patientName ? `${title} · ${patientName}` : title}</DialogTitle>
             <DialogDescription>
               {mode === "phase"
-                ? "Los ejercicios actuales quedan finalizados en el expediente y el paciente verá estos con un enlace nuevo."
+                ? "Los ejercicios actuales quedan como fase anterior en el expediente. El paciente verá estos con el mismo enlace o QR que ya tiene."
                 : startedFrom
                   ? `Desde la tabla «${startedFrom}». Los cambios solo afectan a este paciente.`
                   : "El paciente los verá en su móvil, sin el diagnóstico. Ajusta las dosis a su caso."}

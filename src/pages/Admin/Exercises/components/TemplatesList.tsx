@@ -103,9 +103,15 @@ export default function TemplatesList() {
                   );
                 })}
               </ol>
-              <Button variant="outline" className="mt-auto w-fit rounded-full" onClick={() => setAssigning(t)}>
-                <Send /> Pautar a un paciente
-              </Button>
+              {t.items.length === 0 ? (
+                <p className="mt-auto rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                  Esta tabla se ha quedado sin ejercicios porque se archivaron. Edítala para añadir otros o elimínala.
+                </p>
+              ) : (
+                <Button variant="outline" className="mt-auto w-fit rounded-full" onClick={() => setAssigning(t)}>
+                  <Send /> Pautar a un paciente
+                </Button>
+              )}
             </li>
           ))}
         </ul>

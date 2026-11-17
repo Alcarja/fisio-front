@@ -35,6 +35,12 @@ export default function ProgramSection({ patientId, caseId, caseOpen, programs }
 
       {active ? (
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-3">
+          {!caseOpen && (
+            <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+              El expediente está cerrado, pero el paciente sigue viendo estos ejercicios. Finalízalos si ya no debe
+              hacerlos.
+            </p>
+          )}
           <ProgramItems patientId={patientId} program={active} />
           {active.frequency && <p className="text-xs text-muted-foreground">{active.frequency}</p>}
           <div className="flex flex-wrap gap-2">

@@ -232,8 +232,8 @@ export default function ExerciseDialog({ exercise, onClose, onDuplicated }: Prop
         {confirmArchive && (
           <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
             <span>
-              «{exercise!.name}» saldrá del banco y de las tablas. Los pacientes que ya lo tienen pautado lo seguirán
-              viendo.
+              «{exercise!.name}» saldrá del banco y de las tablas que lo usan. Los pacientes que ya lo tienen pautado lo
+              seguirán viendo.
             </span>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setConfirmArchive(false)}>

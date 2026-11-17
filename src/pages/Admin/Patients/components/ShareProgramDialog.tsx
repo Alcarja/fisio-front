@@ -33,8 +33,9 @@ export default function ShareProgramDialog({ token, onClose }: { token: string; 
         <DialogHeader>
           <DialogTitle>Ejercicios para el paciente</DialogTitle>
           <DialogDescription>
-            Que lo escanee con la cámara del móvil antes de irse. La página solo muestra los ejercicios, nunca su
-            diagnóstico, y deja de funcionar al finalizarlos.
+            Que lo escanee con la cámara del móvil antes de irse. Es el mismo enlace aunque cambies los ejercicios o
+            pases a una nueva fase. Solo muestra los ejercicios, nunca su diagnóstico, y deja de funcionar al
+            finalizarlos.
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center rounded-2xl border bg-white p-6">
