@@ -382,6 +382,83 @@ export const useSetOnlineBookingEnabled = () =>
 export const useUpdateBookingHours = () => useOnlineBookingMutation(api.updateBookingHours);
 export const useUpdateBookingRules = () => useOnlineBookingMutation(api.updateBookingRules);
 
+//Ejercicios: the bank and the tablas (clinical roles of the active clinic)
+export const useExercises = (activeClinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["exercises", activeClinicId],
+    queryFn: api.getExercises,
+    enabled: !!activeClinicId,
+  });
+
+export const useExerciseTemplates = (activeClinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["exerciseTemplates", activeClinicId],
+    queryFn: api.getTemplates,
+    enabled: !!activeClinicId,
+  });
+
+// Archiving an exercise also takes it out of the tablas: reload both
+const useExerciseMutation = <TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["exercises"] }),
+        queryClient.invalidateQueries({ queryKey: ["exerciseTemplates"] }),
+      ]),
+  });
+};
+
+export const useCreateExercise = () => useExerciseMutation(api.createExercise);
+export const useUpdateExercise = () => useExerciseMutation(api.updateExercise);
+export const useArchiveExercise = () => useExerciseMutation(api.archiveExercise);
+export const useDuplicateExercise = () => useExerciseMutation(api.duplicateExercise);
+export const useUploadExerciseImage = () => useExerciseMutation(api.uploadExerciseImage);
+export const useDeleteExerciseImage = () => useExerciseMutation(api.deleteExerciseImage);
+export const useCreateTemplate = () => useExerciseMutation(api.createTemplate);
+export const useUpdateTemplate = () => useExerciseMutation(api.updateTemplate);
+export const useDeleteTemplate = () => useExerciseMutation(api.deleteTemplate);
+
+// A patient's programs. Under "patientClinical": the clinical log reloads too
+export const usePrograms = (activeClinicId: string | undefined, patientId: string | undefined) =>
+  useQuery({
+    queryKey: ["patientClinical", activeClinicId, patientId, "programs"],
+    queryFn: () => api.getPrograms(patientId!),
+    enabled: !!activeClinicId && !!patientId,
+  });
+
+export const useActivePrograms = (activeClinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["activePrograms", activeClinicId],
+    queryFn: api.getActivePrograms,
+    enabled: !!activeClinicId,
+  });
+
+const useProgramMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<void>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["patientClinical"] }),
+        queryClient.invalidateQueries({ queryKey: ["activePrograms"] }),
+      ]),
+  });
+};
+
+export const useCreateProgram = () => useProgramMutation(api.createProgram);
+export const useUpdateProgram = () => useProgramMutation(api.updateProgram);
+export const useFinishProgram = () => useProgramMutation(api.finishProgram);
+
+export const usePublicProgram = (token: string | undefined) =>
+  useQuery({
+    queryKey: ["publicProgram", token],
+    queryFn: () => api.getPublicProgram(token!),
+    enabled: !!token,
+    retry: false,
+  });
+
 //Reminders settings (owners and admins of the active clinic)
 export const useReminders = (activeClinicId: string | undefined) => {
   return useQuery({

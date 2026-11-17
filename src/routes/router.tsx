@@ -8,6 +8,7 @@ import RequireActiveClinic from "./RequireActiveClinic";
 import SelectClinicPage from "@/pages/SelectClinic/SelectClinicPage";
 import {
   bookingsAccess,
+  clinicalAccess,
   onlineBookingAccess,
   panelAccess,
   patientsAccess,
@@ -44,6 +45,8 @@ import ResetPasswordPage from "@/pages/ResetPassword/ResetPasswordPage";
 import ForgotPasswordPage from "@/pages/ForgotPassword/ForgotPasswordPage";
 import PublicBookingPage from "@/pages/PublicBooking/PublicBookingPage";
 import ManageBookingPage from "@/pages/PublicBooking/ManageBookingPage";
+import PublicExercisesPage from "@/pages/PublicExercises/PublicExercisesPage";
+import ExercisesPage from "@/pages/Admin/Exercises/ExercisesPage";
 import NotFoundPage from "@/pages/NotFound/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -66,6 +69,8 @@ export const router = createBrowserRouter([
   // A clinic's own booking page for its patients: no Kineflow navbar
   { path: paths.publicBooking, element: <PublicBookingPage /> },
   { path: paths.publicBookingManage, element: <ManageBookingPage /> },
+  // A patient's exercises for home (link or QR from their physio)
+  { path: paths.publicExercises, element: <PublicExercisesPage /> },
   { path: paths.acceptInvitation, element: <AcceptInvitationPage /> },
   { path: paths.forgotPassword, element: <ForgotPasswordPage /> },
   { path: paths.resetPassword, element: <ResetPasswordPage /> },
@@ -173,6 +178,15 @@ export const router = createBrowserRouter([
           { path: paths.adminPatients, element: <PatientsPage /> },
           { path: paths.adminPatient, element: <PatientDetailsPage /> },
         ],
+      },
+      // Ejercicios: owners, admins and physios, in clinics with Pacientes
+      {
+        element: (
+          <RequireRole access={clinicalAccess} redirectTo={paths.admin}>
+            <Outlet />
+          </RequireRole>
+        ),
+        children: [{ path: paths.adminExercises, element: <ExercisesPage /> }],
       },
       // Day-to-day section for physios and receptionists: add a group here with
       // <RequireRole access={staffAccess} redirectTo={paths.admin}> when its

@@ -15,39 +15,12 @@ const principles = [
   {
     title: "Privacidad desde el diseño",
     description:
-      "Los datos de tus pacientes son de los más sensibles que existen. Cada clínica solo ve los suyos, y cada persona solo lo que su rol le permite.",
+      "Los datos de tus pacientes son de los más sensibles que existen. Cada clínica solo ve los suyos, cada persona solo lo que su rol le permite, y la historia clínica se guarda cifrada.",
   },
   {
     title: "Crece a tu ritmo",
     description:
       "Un fisio autónomo y una clínica con diez salas no necesitan lo mismo. Configura solo lo que uses: una sala o diez, un servicio o veinte.",
-  },
-];
-
-// Keep "Ya disponible" in sync with what the app really does
-const roadmap = [
-  {
-    stage: "Ya disponible",
-    note: "Funcionando",
-    items: [
-      "Agenda del equipo por día y semana",
-      "Salas, servicios y horarios",
-      "Equipo con roles e invitaciones",
-      "Informes mensuales",
-    ],
-    accent: "bg-primary",
-  },
-  {
-    stage: "Próximamente",
-    note: "En diseño",
-    items: ["Fichas de pacientes e historias clínicas", "Recordatorios de citas", "Reserva online"],
-    accent: "bg-coral",
-  },
-  {
-    stage: "Más adelante",
-    note: "Explorando",
-    items: ["Facturación y bonos", "Lista de espera", "Planes de ejercicios en casa"],
-    accent: "bg-muted-foreground/40",
   },
 ];
 
@@ -93,8 +66,9 @@ export default function AboutPage() {
           </blockquote>
           <p className="text-muted-foreground">
             Kineflow empieza por lo que más tiempo quita: la agenda del equipo,
-            las salas y la organización de la clínica, en un solo lugar y
-            diseñado con fisioterapeutas, no solo para ellos.
+            las fichas y la historia clínica de los pacientes, las citas que
+            piden ellos mismos y los ejercicios que se llevan a casa, en un solo
+            lugar y diseñado con fisioterapeutas, no solo para ellos.
           </p>
         </div>
       </section>
@@ -118,38 +92,6 @@ export default function AboutPage() {
               </span>
               <h3 className="font-display text-3xl tracking-tight">{p.title}</h3>
               <p className="max-w-md text-muted-foreground">{p.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Roadmap */}
-      <section className="mx-auto max-w-6xl px-5">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <h2 className="font-display text-5xl leading-[1.02] tracking-tight md:text-6xl">
-            Hacia dónde vamos.
-          </h2>
-          <p className="max-w-sm text-muted-foreground">
-            Estamos empezando y construimos de forma abierta. Esto es lo que tenemos entre manos.
-          </p>
-        </div>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {roadmap.map((column) => (
-            <div key={column.stage} className="flex flex-col gap-6 rounded-[1.75rem] border bg-card p-6">
-              <div className="flex items-center justify-between">
-                <span className="font-display text-3xl">{column.stage}</span>
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className={cn("size-2 rounded-full", column.accent)} />
-                  {column.note}
-                </span>
-              </div>
-              <ul className="flex flex-col gap-3">
-                {column.items.map((item) => (
-                  <li key={item} className="rounded-xl bg-muted/60 px-4 py-3 text-sm">
-                    {item}
-                  </li>
-                ))}
-              </ul>
             </div>
           ))}
         </div>

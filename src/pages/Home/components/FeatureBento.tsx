@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Check } from "lucide-react";
+import { Bell, BellOff, Check, ClipboardList, Lock, QrCode, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Tile({
@@ -238,6 +238,157 @@ function Team() {
   );
 }
 
+// Historia clínica: one expediente with its pain trend and evolution
+function ClinicalCase() {
+  const notes = [
+    { date: "4 nov", pain: 7, text: "Valoración. Dolor al elevar el brazo." },
+    { date: "11 nov", pain: 5, text: "Mejor movilidad. Ejercicios en casa." },
+    { date: "18 nov", pain: 3, text: "Casi sin dolor al final del rango." },
+  ];
+  const painClass = (level: number) =>
+    level <= 3
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+      : level <= 6
+        ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+        : "bg-red-500/15 text-red-700 dark:text-red-400";
+  return (
+    <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border bg-background p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Tendinopatía del supraespinoso</span>
+          <span className="w-fit rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+            Hombro · derecho
+          </span>
+        </div>
+        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          Dolor
+          <span className={cn("rounded-full px-1.5 py-0.5 font-medium tabular-nums", painClass(7))}>7</span>→
+          <span className={cn("rounded-full px-1.5 py-0.5 font-medium tabular-nums", painClass(3))}>3</span>
+        </span>
+      </div>
+      <ol className="flex flex-col">
+        {notes.map((n, i) => (
+          <li
+            key={n.date}
+            className="relative border-l py-1.5 pl-4 text-xs transition-transform duration-300 before:absolute before:top-3 before:-left-[4.5px] before:size-2 before:rounded-full before:bg-border group-hover:translate-x-0.5"
+            style={{ transitionDelay: `${i * 50}ms` }}
+          >
+            <span className="font-medium">{n.date}</span>
+            <span className={cn("ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-medium", painClass(n.pain))}>
+              {n.pain}
+            </span>
+            <p className="mt-0.5 text-muted-foreground">{n.text}</p>
+          </li>
+        ))}
+      </ol>
+      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Lock className="size-3" /> Cifrada · solo la ve el personal clínico
+      </span>
+    </div>
+  );
+}
+
+// Reserva online: a QR on the counter and the free times
+function OnlineBooking() {
+  // A decorative pattern, not a real code
+  const cells = Array.from({ length: 49 }, (_, i) => {
+    const r = Math.floor(i / 7);
+    const c = i % 7;
+    const corner = (r < 2 && c < 2) || (r < 2 && c > 4) || (r > 4 && c < 2);
+    return corner || ((r + 1) * 31 + (c + 1) * 17 + r * c * 7) % 3 !== 0;
+  });
+  const slots = ["09:30", "10:00", "11:30", "12:00", "17:00", "18:30"];
+  return (
+    <div className="flex w-full max-w-[15rem] flex-col items-center gap-4">
+      <div className="grid size-24 grid-cols-7 gap-0.5 rounded-xl border bg-background p-2 shadow-sm">
+        {cells.map((on, i) => (
+          <span key={i} className={cn("rounded-[2px]", on ? "bg-foreground" : "bg-transparent")} />
+        ))}
+      </div>
+      <div className="grid w-full grid-cols-3 gap-1.5">
+        {slots.map((t, i) => (
+          <span
+            key={t}
+            className={cn(
+              "rounded-full border py-1 text-center text-[11px] tabular-nums transition-colors",
+              i === 1 ? "border-primary bg-primary text-primary-foreground" : "bg-background group-hover:border-primary/30",
+            )}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Recordatorios: the email the patient gets, and the mark when there's no email
+function Reminder() {
+  return (
+    <div className="flex w-full max-w-[15rem] flex-col gap-2">
+      <div className="flex flex-col gap-1.5 rounded-xl border bg-background p-3 shadow-sm transition-transform duration-300 group-hover:-translate-y-0.5">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+          <Bell className="size-3" /> Recordatorio
+        </span>
+        <span className="text-xs font-medium">Te esperamos mañana a las 10:00</span>
+        <span className="text-[11px] text-muted-foreground">Con Laura · Clínica Movimiento</span>
+      </div>
+      <div className="flex items-center gap-2 rounded-xl border border-dashed px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-rose-600 text-white">
+          <BellOff className="size-2.5" />
+        </span>
+        Carlos Ruiz · falta su email
+      </div>
+    </div>
+  );
+}
+
+// Ejercicios para casa: the physio's tabla, and what the patient sees on their phone
+function HomeExercises() {
+  const items = [
+    { name: "Puente de glúteo", dose: "3 × 12" },
+    { name: "Gato-camello", dose: "2 × 10" },
+    { name: "Plancha lateral", dose: "3 × 15 s · cada lado" },
+  ];
+  return (
+    <div className="flex w-full max-w-lg items-center justify-center gap-4">
+      <div className="hidden w-48 flex-col gap-2 rounded-2xl border bg-background p-3 shadow-sm sm:flex">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+          <ClipboardList className="size-3" /> Tabla · Lumbar fase 1
+        </span>
+        {items.map((i) => (
+          <span key={i.name} className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-2 py-1.5 text-[11px]">
+            <span className="truncate">{i.name}</span>
+            <span className="shrink-0 text-muted-foreground">{i.dose.split(" ·")[0]}</span>
+          </span>
+        ))}
+        <span className="mt-1 flex items-center gap-1.5 self-start rounded-full bg-primary px-2.5 py-1 text-[11px] text-primary-foreground">
+          <QrCode className="size-3" /> Enseñar al paciente
+        </span>
+      </div>
+      <div className="w-44 rounded-[1.75rem] border-4 border-foreground/80 bg-background p-3 shadow-md transition-transform duration-300 group-hover:-translate-y-1">
+        <span className="text-[9px] font-medium text-coral">Clínica Movimiento</span>
+        <span className="mt-0.5 block font-display text-xl leading-none">Tus ejercicios</span>
+        <div className="mt-2.5 flex flex-col gap-1.5">
+          {items.map((i, n) => (
+            <div key={i.name} className="flex items-center gap-2 rounded-xl border p-1.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground">
+                {n + 1}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[10px] font-medium">{i.name}</span>
+                <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <Repeat className="size-2.5" /> {i.dose}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FeatureBento() {
   return (
     <section className="mx-auto max-w-6xl px-5">
@@ -249,11 +400,37 @@ export default function FeatureBento() {
           </h2>
         </div>
         <p className="max-w-sm text-muted-foreground">
-          Todo lo que necesita la agenda de una clínica, incluido desde el primer día.
+          De la agenda a la historia clínica: todo lo que necesita una clínica, en el mismo sitio.
         </p>
       </div>
 
       <div className="mt-12 grid auto-rows-[minmax(18rem,auto)] gap-4 md:grid-cols-3">
+        <Tile
+          className="md:col-span-2"
+          title="Historia clínica de cada paciente"
+          description="Un expediente por lesión, con valoración, plan y una nota por sesión. El dolor de cada visita se ve de un vistazo, y recepción solo ve los datos de contacto."
+        >
+          <ClinicalCase />
+        </Tile>
+        <Tile
+          title="Reserva online con QR"
+          description="Tus pacientes piden cita desde un enlace o un QR en el mostrador, solo en las horas que tú decides. Y la cancelan solos si no pueden venir."
+        >
+          <OnlineBooking />
+        </Tile>
+        <Tile
+          title="Recordatorios de cita"
+          description="Un email antes de cada cita, en nombre de tu clínica. La agenda te marca a quién no le llegará porque falta su email."
+        >
+          <Reminder />
+        </Tile>
+        <Tile
+          className="md:col-span-2"
+          title="Ejercicios para casa"
+          description="Prepara tablas con tu banco de ejercicios o el de Kineflow y páutalas desde el expediente, ajustadas a cada paciente. Lo ve en su móvil escaneando un QR antes de irse, o en una hoja impresa."
+        >
+          <HomeExercises />
+        </Tile>
         <Tile
           className="md:col-span-2"
           title="Informes que se entienden"

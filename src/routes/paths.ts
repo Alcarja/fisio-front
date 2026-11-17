@@ -17,6 +17,8 @@ export const paths = {
   adminPatients: "/admin/patients",
   // Build real links with generatePath(paths.adminPatient, { patientId })
   adminPatient: "/admin/patients/:patientId",
+  // The exercise bank and the tablas: owners, admins and physios
+  adminExercises: "/admin/exercises",
   // Active clinic's team: owners and admins only
   adminTeam: "/admin/team",
   // Monthly report of the active clinic's appointments: owners and admins only
@@ -44,6 +46,9 @@ export const paths = {
   // Public: a patient's own appointment, to see or cancel it. The link is in
   // their confirmation email
   publicBookingManage: "/reservar/:slug/cita/:token",
+  // Public: a patient's exercises for home, from the link or QR their physio
+  // gave them. Build real links with generatePath(paths.publicExercises, { token })
+  publicExercises: "/ejercicios/:token",
   login: "/login",
   // Choose which clinic to work on (users in several clinics)
   selectClinic: "/select-clinic",

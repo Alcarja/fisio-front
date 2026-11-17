@@ -30,6 +30,9 @@ const fieldLabels: Record<string, string> = {
   date: "Fecha",
   painLevel: "Dolor",
   text: "Texto",
+  frequency: "Frecuencia",
+  notes: "Indicaciones",
+  items: "Ejercicios",
 };
 const label = (field: string) => fieldLabels[field] ?? field;
 
@@ -39,6 +42,7 @@ const things: Record<ClinicalLogEntry["entity"], string> = {
   case: "un expediente",
   note: "una nota de evolución",
   clinic: "los datos de la clínica",
+  program: "los ejercicios para casa",
 };
 const verbs: Record<ClinicalLogEntry["action"], string> = {
   view: "Vio",

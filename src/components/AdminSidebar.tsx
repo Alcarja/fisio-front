@@ -7,6 +7,7 @@ import {
   Inbox,
   CalendarDays,
   ChartColumn,
+  Dumbbell,
   LayoutDashboard,
   Settings,
   UserRound,
@@ -18,6 +19,7 @@ import ClinicSwitcher from "@/components/ClinicSwitcher";
 import { paths } from "@/routes/paths";
 import {
   bookingsAccess,
+  clinicalAccess,
   hasAccess,
   patientsAccess,
   superadminAccess,
@@ -71,6 +73,7 @@ const sections: SidebarSection[] = [
     items: [
       { label: "Reservas", icon: CalendarDays, to: paths.adminBookings },
       { label: "Pacientes", icon: BookUser, to: paths.adminPatients, access: patientsAccess },
+      { label: "Ejercicios", icon: Dumbbell, to: paths.adminExercises, access: clinicalAccess },
     ],
   },
   // Superadmins: all clinics, creating clinics

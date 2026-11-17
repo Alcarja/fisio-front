@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, FolderCheck, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { CaseNote, PatientCase, PatientClinical } from "@/adapters/api";
+import type { CaseNote, ExerciseProgram, PatientCase, PatientClinical } from "@/adapters/api";
 import {
   useCreateCaseNote,
   useDeleteCase,
@@ -23,6 +23,7 @@ import {
 import CaseDialog from "./CaseDialog";
 import CloseCaseDialog from "./CloseCaseDialog";
 import NoteForm from "./NoteForm";
+import ProgramSection from "./ProgramSection";
 
 type Props = {
   patientId: string;
@@ -33,6 +34,8 @@ type Props = {
   myUserId: string | undefined;
   canManage: boolean;
   defaultExpanded?: boolean;
+  // This expediente's exercise programs, newest first
+  programs: ExerciseProgram[];
 };
 
 // One expediente: a summary line that opens to show the assessment, the
@@ -45,6 +48,7 @@ export default function CaseCard({
   myUserId,
   canManage,
   defaultExpanded = false,
+  programs,
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [dialog, setDialog] = useState<"edit" | "close" | "reopen" | "delete" | null>(null);
@@ -189,6 +193,8 @@ export default function CaseCard({
               </Button>
             )}
           </div>
+
+          <ProgramSection patientId={patientId} caseId={c.id} caseOpen={isOpen} programs={programs} />
 
           <div className="flex flex-col gap-3">
             <h4 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">

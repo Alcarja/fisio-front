@@ -6,6 +6,7 @@ import CtaBand from "@/components/CtaBand";
 import HeroPreview from "./components/HeroPreview";
 import HowItWorks from "./components/HowItWorks";
 import FeatureBento from "./components/FeatureBento";
+import PrivacySection from "./components/PrivacySection";
 
 export default function HomePage() {
   return (
@@ -54,8 +55,9 @@ export default function HomePage() {
             className="mt-8 max-w-xl text-lg text-muted-foreground text-pretty motion-safe:animate-rise md:text-xl"
             style={{ animationDelay: "160ms" }}
           >
-            Kineflow reúne la agenda de tu equipo, tus salas y tus servicios en un solo
-            lugar, para que cada hora sea para tus pacientes.
+            Kineflow reúne la agenda de tu equipo, la historia clínica de tus pacientes, sus
+            reservas online y sus ejercicios para casa en un solo lugar, para que cada hora
+            sea para ellos.
           </p>
 
           <div
@@ -91,6 +93,7 @@ export default function HomePage() {
 
       <HowItWorks />
       <FeatureBento />
+      <PrivacySection />
       <CtaBand />
     </div>
   );

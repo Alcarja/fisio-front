@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { CircleAlert, FolderOpen, FolderPlus, Loader2, Pencil, TriangleAlert } from "lucide-react";
-import { useMe, usePatientClinical } from "@/adapters/hook";
+import { useMe, usePatientClinical, usePrograms } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
 import { hasAccess, teamAccess } from "@/lib/roles";
 import { backgroundFields } from "../clinicalFormat";
@@ -21,6 +21,7 @@ export default function ClinicalRecord({ patientId }: Props) {
     patientId,
     true,
   );
+  const { data: programs = [] } = usePrograms(me?.activeClinic?.clinicId, patientId);
   const [dialog, setDialog] = useState<"case" | "background" | null>(null);
 
   if (isPending) {
@@ -92,14 +93,25 @@ export default function ClinicalRecord({ patientId }: Props) {
               <Group title="Abiertos">
                 {open.map((c, index) => (
                   // The most recent open one starts unfolded: it's usually today's
-                  <CaseCard key={c.id} patientCase={c} defaultExpanded={index === 0} {...cardProps} />
+                  <CaseCard
+                    key={c.id}
+                    patientCase={c}
+                    defaultExpanded={index === 0}
+                    programs={programs.filter((p) => p.caseId === c.id)}
+                    {...cardProps}
+                  />
                 ))}
               </Group>
             )}
             {closed.length > 0 && (
               <Group title="Cerrados">
                 {closed.map((c) => (
-                  <CaseCard key={c.id} patientCase={c} {...cardProps} />
+                  <CaseCard
+                    key={c.id}
+                    patientCase={c}
+                    programs={programs.filter((p) => p.caseId === c.id)}
+                    {...cardProps}
+                  />
                 ))}
               </Group>
             )}

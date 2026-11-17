@@ -730,6 +730,226 @@ export const updateBookingHours = async ({
   );
 };
 
+//Ejercicios (owners, admins and physios, clinics with the Pacientes section)
+// Mirrors back/src/lib/exercises.ts; labels in pages/Admin/Exercises/exerciseFormat.ts
+export type ExerciseType = "mobility" | "strength" | "stretching" | "balance" | "breathing";
+export type Equipment =
+  | "none"
+  | "mat"
+  | "band"
+  | "dumbbell"
+  | "fitball"
+  | "step"
+  | "chair"
+  | "wall"
+  | "towel"
+  | "foam_roller";
+
+// Sets, reps or seconds, rest and "each side"
+export type Dose = {
+  sets: number | null;
+  reps: number | null;
+  seconds: number | null;
+  restSeconds: number | null;
+  perSide: boolean;
+};
+
+export type Exercise = {
+  id: string;
+  name: string;
+  bodyRegions: BodyRegion[];
+  type: ExerciseType;
+  equipment: Equipment[];
+  instructions: string; // one step per line
+  precautions: string | null;
+  defaultSets: number | null;
+  defaultReps: number | null;
+  defaultSeconds: number | null;
+  defaultRestSeconds: number | null;
+  perSide: boolean;
+  // Kineflow's base bank: read only, duplicate it to adapt it
+  isBase: boolean;
+  hasImage: boolean;
+  archived: boolean;
+  updatedAt: string;
+};
+
+export type ExerciseInput = Omit<Exercise, "id" | "isBase" | "hasImage" | "archived" | "updatedAt">;
+
+// One exercise of a tabla or a program, with its dose
+export type ListItemInput = Dose & { exerciseId: string; notes: string | null };
+
+export type ExerciseTemplate = {
+  id: string;
+  name: string;
+  frequency: string | null;
+  notes: string | null;
+  updatedAt: string;
+  items: (ListItemInput & { id: string })[];
+};
+
+export type TemplateInput = {
+  name: string;
+  frequency: string | null;
+  notes: string | null;
+  items: ListItemInput[];
+};
+
+const EXERCISES_PATH = "/api/clinic/exercises";
+const exercisePath = (id: string) => `${EXERCISES_PATH}/${encodeURIComponent(id)}`;
+const TEMPLATES_PATH = "/api/clinic/exercise-templates";
+
+export const getExercises = async (): Promise<Exercise[]> => {
+  const { exercises } = await stpApi.get(EXERCISES_PATH);
+  return exercises;
+};
+export const createExercise = async (data: ExerciseInput): Promise<Exercise> => {
+  const { exercise } = await stpApi.post(EXERCISES_PATH, data);
+  return exercise;
+};
+export const updateExercise = async ({ id, data }: { id: string; data: ExerciseInput }): Promise<Exercise> => {
+  const { exercise } = await stpApi.put(exercisePath(id), data);
+  return exercise;
+};
+// Archived: it leaves the bank and the tablas; programs already given keep it
+export const archiveExercise = async (id: string): Promise<void> => {
+  await stpApi.delete(exercisePath(id));
+};
+export const duplicateExercise = async (id: string): Promise<Exercise> => {
+  const { exercise } = await stpApi.post(`${exercisePath(id)}/duplicate`, {});
+  return exercise;
+};
+export const uploadExerciseImage = async ({ id, image }: { id: string; image: Blob }): Promise<void> => {
+  await stpApi.upload(`${exercisePath(id)}/image`, image, {}, "PUT");
+};
+export const deleteExerciseImage = async (id: string): Promise<void> => {
+  await stpApi.delete(`${exercisePath(id)}/image`);
+};
+// The image needs the session cookie, so it's fetched and shown from memory
+export const getExerciseImage = (id: string, version: string): Promise<Blob> =>
+  stpApi.download(`${exercisePath(id)}/image?v=${encodeURIComponent(version)}`);
+
+export const getTemplates = async (): Promise<ExerciseTemplate[]> => {
+  const { templates } = await stpApi.get(TEMPLATES_PATH);
+  return templates;
+};
+export const createTemplate = async (data: TemplateInput): Promise<void> => {
+  await stpApi.post(TEMPLATES_PATH, data);
+};
+export const updateTemplate = async ({ id, data }: { id: string; data: TemplateInput }): Promise<void> => {
+  await stpApi.put(`${TEMPLATES_PATH}/${encodeURIComponent(id)}`, data);
+};
+export const deleteTemplate = async (id: string): Promise<void> => {
+  await stpApi.delete(`${TEMPLATES_PATH}/${encodeURIComponent(id)}`);
+};
+
+// Programas: exercises given to a patient inside an expediente
+export type ProgramItem = Dose & {
+  id: string;
+  exerciseId: string | null;
+  name: string;
+  instructions: string;
+  precautions: string | null;
+  notes: string | null;
+  hasImage: boolean;
+  imageVersion: string | null;
+};
+
+export type ExerciseProgram = {
+  id: string;
+  caseId: string;
+  status: "active" | "finished";
+  frequency: string | null;
+  notes: string | null;
+  startDate: string;
+  finishedAt: string | null;
+  // The key of the patient's page. null once finished
+  accessToken: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  items: ProgramItem[];
+};
+
+export type ProgramInput = {
+  frequency: string | null;
+  notes: string | null;
+  items: ListItemInput[];
+};
+
+export const getPrograms = async (patientId: string): Promise<ExerciseProgram[]> => {
+  const { programs } = await stpApi.get(`${patientPath(patientId)}/programs`);
+  return programs;
+};
+// `replaces`: finish that active program in the same step (a new phase)
+export const createProgram = async ({
+  patientId,
+  caseId,
+  data,
+  replaces,
+}: {
+  patientId: string;
+  caseId: string;
+  data: ProgramInput;
+  replaces?: string;
+}): Promise<void> => {
+  await stpApi.post(`${casePath({ patientId, caseId })}/programs`, { ...data, replaces });
+};
+export const updateProgram = async ({
+  patientId,
+  programId,
+  data,
+}: {
+  patientId: string;
+  programId: string;
+  data: ProgramInput;
+}): Promise<void> => {
+  await stpApi.put(`${patientPath(patientId)}/programs/${encodeURIComponent(programId)}`, data);
+};
+export const finishProgram = async ({ patientId, programId }: { patientId: string; programId: string }): Promise<void> => {
+  await stpApi.post(`${patientPath(patientId)}/programs/${encodeURIComponent(programId)}/finish`, {});
+};
+export const getProgramItemImage = (patientId: string, programId: string, itemId: string, version: string) =>
+  stpApi.download(
+    `${patientPath(patientId)}/programs/${encodeURIComponent(programId)}/items/${encodeURIComponent(itemId)}/image?v=${encodeURIComponent(version)}`,
+  );
+
+// Who has exercises for home right now (the Ejercicios page → En curso)
+export type ActiveProgram = {
+  id: string;
+  patientId: string;
+  firstName: string;
+  lastName: string;
+  caseId: string;
+  caseTitle: string;
+  startDate: string;
+  frequency: string | null;
+  createdByName: string | null;
+  itemCount: number;
+  itemNames: string[]; // the first few
+};
+
+export const getActivePrograms = async (): Promise<ActiveProgram[]> => {
+  const { programs } = await stpApi.get("/api/clinic/exercise-programs");
+  return programs;
+};
+
+// The patient's own page (public, no login)
+export type PublicProgram = {
+  clinicName: string;
+  physioName: string | null;
+  frequency: string | null;
+  notes: string | null;
+  startDate: string;
+  items: Omit<ProgramItem, "exerciseId">[];
+};
+
+export const publicExercisesPath = (token: string) => `/api/public/exercises/${encodeURIComponent(token)}`;
+
+export const getPublicProgram = async (token: string): Promise<PublicProgram> => {
+  const { program } = await stpApi.get(publicExercisesPath(token));
+  return program;
+};
+
 //Reminders settings (owners and admins of the active clinic). Mirrors back/src/lib/reminders.ts
 export type ReminderSettings = {
   // "day_before": the day before at sendTime · "hours_before": hoursBefore hours before
@@ -1269,7 +1489,7 @@ export type ClinicalLogEntry = {
   at: string;
   userName: string;
   action: "view" | "create" | "update" | "delete" | "export";
-  entity: "record" | "background" | "case" | "note" | "clinic";
+  entity: "record" | "background" | "case" | "note" | "clinic" | "program";
   entityId: string | null;
   // Changes: the fields that changed and the values they had before
   fields: string[] | null;

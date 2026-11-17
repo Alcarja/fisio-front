@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// Where the backend is. Also for plain <img> links to public files
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 class StpApi {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    this.baseUrl = API_URL;
   }
 
   private async request(
@@ -67,10 +70,15 @@ class StpApi {
 
   // Sends a file as the request body (with its own type), and details about it
   // in the URL. Returns the JSON answer
-  async upload(endpoint: string, file: File, params: Record<string, string> = {}) {
+  async upload(
+    endpoint: string,
+    file: Blob,
+    params: Record<string, string> = {},
+    method: "POST" | "PUT" = "POST",
+  ) {
     const query = new URLSearchParams(params).toString();
     const res = await fetch(`${this.baseUrl}${endpoint}${query ? `?${query}` : ""}`, {
-      method: "POST",
+      method,
       headers: { "Content-Type": file.type },
       credentials: "include",
       body: file,
