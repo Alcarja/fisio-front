@@ -28,6 +28,8 @@ export const paths = {
   adminSettingsServices: "/admin/settings/services",
   // Only in clinics with the "online_booking" feature
   adminSettingsOnlineBooking: "/admin/settings/online-booking",
+  // Only in clinics with the "reminders" feature
+  adminSettingsReminders: "/admin/settings/reminders",
   // Superadmin only
   adminClinics: "/admin/clinics",
   // Superadmin only: requests sent from the website's contact form

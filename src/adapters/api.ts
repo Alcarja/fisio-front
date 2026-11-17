@@ -20,7 +20,7 @@ export type Membership = {
 
 // Optional features a superadmin switches on per clinic (off by default).
 // Mirrors back/src/lib/features.ts; labels for the panel in lib/features.ts
-export type ClinicFeature = "invoicing" | "clinical_history" | "online_booking";
+export type ClinicFeature = "invoicing" | "clinical_history" | "online_booking" | "reminders";
 
 // GET /me response
 export type Me = {
@@ -730,6 +730,34 @@ export const updateBookingHours = async ({
   );
 };
 
+//Reminders settings (owners and admins of the active clinic). Mirrors back/src/lib/reminders.ts
+export type ReminderSettings = {
+  // "day_before": the day before at sendTime · "hours_before": hoursBefore hours before
+  timing: "day_before" | "hours_before";
+  sendTime: string;
+  hoursBefore: number;
+  // The service's name can say something about the patient's health: off by default
+  includeService: boolean;
+  // Where patients' replies go. null = the online booking's notices address
+  replyTo: string | null;
+  // The clinic's own text at the end: address, what to bring…
+  extraText: string | null;
+};
+
+export type Reminders = { enabled: boolean; settings: ReminderSettings };
+
+const REMINDERS_PATH = "/api/clinic/settings/reminders";
+
+export const getReminders = async (): Promise<Reminders> => stpApi.get(REMINDERS_PATH);
+
+export const setRemindersEnabled = async (enabled: boolean): Promise<void> => {
+  await stpApi.patch(REMINDERS_PATH, { enabled });
+};
+
+export const updateReminderSettings = async (settings: ReminderSettings): Promise<void> => {
+  await stpApi.put(`${REMINDERS_PATH}/settings`, settings);
+};
+
 //Public booking page (/reservar/:slug). No login: the patient's side of online
 // booking. Backend: back/src/controllers/publicBooking.controller.ts
 
@@ -1306,13 +1334,22 @@ export const getClinicExport = async (): Promise<{ clinic: { name: string } }> =
 
 export type AppointmentStatus = "booked" | "confirmed" | "completed" | "no_show" | "cancelled";
 
+// Whether a patient gets a reminder of this appointment (back/src/lib/reminders.ts):
+//   "sent" / "failed": it went out (or failed) for its current time
+//   "pending": it will get one · "missing": it won't, there's no email
+//   null: reminders off, or the appointment doesn't need one (past, cancelled…)
+export type ReminderState = "sent" | "failed" | "pending" | "missing" | null;
+
 export type AppointmentPatient = {
   id: string;
   // The patient's ficha. null: booked with just the name, or ficha deleted
   patientId: string | null;
   firstName: string;
   lastName: string;
+  // The email the clinic wrote for a patient without ficha (for reminders)
+  contactEmail: string | null;
   attendance: "pending" | "attended" | "no_show";
+  reminder: ReminderState;
 };
 
 export type Appointment = {
@@ -1344,6 +1381,8 @@ export type AppointmentPatientInput = {
   patientId?: string;
   firstName: string;
   lastName: string;
+  // Patients without ficha: optional email for their reminders
+  email?: string;
 };
 
 export type NewAppointment = {

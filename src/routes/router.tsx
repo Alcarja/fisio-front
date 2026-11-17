@@ -11,6 +11,7 @@ import {
   onlineBookingAccess,
   panelAccess,
   patientsAccess,
+  remindersAccess,
   superadminAccess,
   teamAccess,
 } from "@/lib/roles";
@@ -24,6 +25,7 @@ import SchedulePage from "@/pages/Admin/Settings/Schedule/SchedulePage";
 import RoomsPage from "@/pages/Admin/Settings/Rooms/RoomsPage";
 import ServicesPage from "@/pages/Admin/Settings/Services/ServicesPage";
 import OnlineBookingPage from "@/pages/Admin/Settings/OnlineBooking/OnlineBookingPage";
+import RemindersPage from "@/pages/Admin/Settings/Reminders/RemindersPage";
 import ClinicsPage from "@/pages/Admin/Clinics/ClinicsPage";
 import BillingPage from "@/pages/Admin/Billing/BillingPage";
 import RequestsPage from "@/pages/Admin/Requests/RequestsPage";
@@ -135,6 +137,14 @@ export const router = createBrowserRouter([
                 element: (
                   <RequireRole access={onlineBookingAccess} redirectTo={paths.adminSettings}>
                     <OnlineBookingPage />
+                  </RequireRole>
+                ),
+              },
+              {
+                path: paths.adminSettingsReminders,
+                element: (
+                  <RequireRole access={remindersAccess} redirectTo={paths.adminSettings}>
+                    <RemindersPage />
                   </RequireRole>
                 ),
               },

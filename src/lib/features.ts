@@ -28,4 +28,10 @@ export const clinicFeatures: {
     description:
       "Los pacientes piden cita ellos mismos con un enlace o un QR. Aquí solo se pone a disposición de la clínica: después la clínica la enciende o apaga en Configuración → Reserva online y elige el horario de cada profesional. Si se desactiva aquí, deja de funcionar aunque la clínica la tenga encendida.",
   },
+  {
+    key: "reminders",
+    label: "Recordatorios de cita",
+    description:
+      "Los pacientes reciben un email antes de su cita. Aquí solo se pone a disposición de la clínica: después la clínica los enciende en Configuración → Recordatorios y elige cuándo se envían. Si se desactiva aquí, dejan de enviarse aunque la clínica los tenga encendidos.",
+  },
 ];

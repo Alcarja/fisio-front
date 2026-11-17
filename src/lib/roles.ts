@@ -36,6 +36,11 @@ export const onlineBookingAccess: AccessRule = {
   feature: "online_booking",
 };
 
+export const remindersAccess: AccessRule = {
+  clinic: ["owner", "admin"],
+  feature: "reminders",
+};
+
 export const clinicalAccess: AccessRule = {
   clinic: ["owner", "admin", "physio"],
   feature: "clinical_history",

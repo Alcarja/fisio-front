@@ -170,11 +170,26 @@ export const toPatientInput = (p: {
   patientId: string | null;
   firstName: string;
   lastName: string;
+  contactEmail?: string | null;
 }) => ({
   ...(p.patientId ? { patientId: p.patientId } : {}),
   firstName: p.firstName,
   lastName: p.lastName,
+  // Kept when the appointment is saved again, or the reminder email would be lost
+  ...(!p.patientId && p.contactEmail ? { email: p.contactEmail } : {}),
 });
+
+// Upcoming appointments where at least one patient won't get a reminder
+// because nobody has their email
+export const missesReminder = (appointment: { patients: { reminder: string | null }[] }) =>
+  appointment.patients.some((p) => p.reminder === "missing");
+
+export const reminderLabels = {
+  sent: "Recordatorio enviado",
+  failed: "No se pudo enviar el recordatorio",
+  pending: "Recibirá recordatorio",
+  missing: "Sin email: no recibirá recordatorio",
+} as const;
 
 // "Ana Morales", or "Pilates · 4/6" for group sessions
 export function bookingTitle(appointment: {

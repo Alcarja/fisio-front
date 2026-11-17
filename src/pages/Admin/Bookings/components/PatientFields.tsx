@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { BookUser, Search, X } from "lucide-react";
+import { BellOff, BookUser, Search, X } from "lucide-react";
 import type { AppointmentPatientInput, Patient } from "@/adapters/api";
 import { useMe, usePatients } from "@/adapters/hook";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,9 @@ const empty: AppointmentPatientInput = { firstName: "", lastName: "" };
 //   appointment is linked to their ficha and shows in their history.
 // - "Solo nombre": name and surname written by hand, saved on the appointment
 //   only. No ficha is created
+//
+// With the "reminders" feature, a patient without ficha can also get an email
+// (optional) for their reminders. Those with a ficha use the ficha's email
 export default function PatientFields({
   value,
   onChange,
@@ -50,6 +53,9 @@ export default function PatientFields({
   // A patient linked while the feature was on shows as a plain name without it.
   // Left untouched, the link is kept; retyping the name drops it
   const linked = canLink && !!value.patientId;
+  const reminders = hasFeature(me, "reminders");
+  // The ficha just chosen has no email: say it won't get reminders
+  const [fichaWithoutEmail, setFichaWithoutEmail] = useState(false);
 
   const [chosenMode, setChosenMode] = useState<Mode | null>(null);
   const [query, setQuery] = useState("");
@@ -70,7 +76,7 @@ export default function PatientFields({
   // Typing a name: stay on "Solo nombre" even if the boxes are emptied again
   const changeName = (names: AppointmentPatientInput) => {
     setChosenMode("name");
-    onChange(names);
+    onChange({ ...names, ...(value.email ? { email: value.email } : {}) });
   };
 
   const search = useDebounced(query.trim());
@@ -86,10 +92,12 @@ export default function PatientFields({
     if (next === mode && !force) return;
     setChosenMode(next);
     setQuery("");
+    setFichaWithoutEmail(false);
     onChange(empty);
   };
 
   const choose = (p: Patient) => {
+    setFichaWithoutEmail(!p.email);
     onChange({ patientId: p.id, firstName: p.firstName, lastName: p.lastName });
     setQuery("");
     setListOpen(false);
@@ -231,6 +239,38 @@ export default function PatientFields({
         )}
         {trailing}
       </div>
+
+      {mode === "name" && reminders && (
+        <Input
+          type="email"
+          disabled={disabled}
+          value={value.email ?? ""}
+          onChange={(e) => {
+            const email = e.target.value;
+            onChange({
+              firstName: value.firstName,
+              lastName: value.lastName,
+              ...(email ? { email } : {}),
+            });
+          }}
+          placeholder="Email para el recordatorio (opcional)"
+          aria-label={`${label}: email para el recordatorio`}
+          autoComplete="off"
+          maxLength={200}
+        />
+      )}
+      {mode === "name" && reminders && !value.email?.trim() && (
+        <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <BellOff className="size-3.5 shrink-0" />
+          Sin email no recibirá recordatorio de la cita.
+        </p>
+      )}
+      {linked && reminders && fichaWithoutEmail && (
+        <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <BellOff className="size-3.5 shrink-0" />
+          Su ficha no tiene email: no recibirá recordatorio. Puedes añadirlo en su ficha.
+        </p>
+      )}
 
       <p className={cn("text-xs text-muted-foreground", !canLink && "hidden")}>
         {mode === "name"

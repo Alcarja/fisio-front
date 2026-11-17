@@ -36,6 +36,8 @@ type Props = {
   onCancel: () => void;
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // same as the backend
+
 const emptyPatient = (): AppointmentPatientInput => ({ firstName: "", lastName: "" });
 
 // Form to create or edit an appointment. The backend checks the rest
@@ -116,11 +118,18 @@ export default function AppointmentForm({
   // Rows left empty don't count. Patients with a ficha keep its id; the rest
   // go by name only, without ficha
   const patients = values.patients
-    .map((p) => ({ ...p, firstName: p.firstName.trim(), lastName: p.lastName.trim() }))
+    .map((p) => ({
+      ...p,
+      firstName: p.firstName.trim(),
+      lastName: p.lastName.trim(),
+      email: p.email?.trim() || undefined,
+    }))
     .filter((p) => p.firstName || p.lastName);
   const fichaIds = patients.flatMap((p) => (p.patientId ? [p.patientId] : []));
   const patientsOk =
-    patients.length > 0 && patients.length <= maxPatients && patients.every((p) => p.firstName && p.lastName);
+    patients.length > 0 &&
+    patients.length <= maxPatients &&
+    patients.every((p) => p.firstName && p.lastName && (!p.email || EMAIL_PATTERN.test(p.email)));
   const valid =
     !!service && !!room && !!values.physioId && !!values.date && !!values.startTime && patientsOk;
 

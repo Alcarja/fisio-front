@@ -382,6 +382,30 @@ export const useSetOnlineBookingEnabled = () =>
 export const useUpdateBookingHours = () => useOnlineBookingMutation(api.updateBookingHours);
 export const useUpdateBookingRules = () => useOnlineBookingMutation(api.updateBookingRules);
 
+//Reminders settings (owners and admins of the active clinic)
+export const useReminders = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["reminders", activeClinicId],
+    queryFn: api.getReminders,
+    enabled: !!activeClinicId,
+  });
+};
+
+// After a change, reload the settings and the calendar (its reminder marks)
+const useRemindersMutation = <TVariables,>(mutationFn: (variables: TVariables) => Promise<void>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+  });
+};
+
+export const useSetRemindersEnabled = () => useRemindersMutation(api.setRemindersEnabled);
+export const useUpdateReminderSettings = () => useRemindersMutation(api.updateReminderSettings);
+
 //Public booking page (no login)
 export const usePublicBooking = (slug: string | undefined) => {
   return useQuery({

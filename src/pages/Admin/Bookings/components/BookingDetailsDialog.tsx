@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import {
+  Bell,
+  BellOff,
   CalendarDays,
   Clock,
   DoorOpen,
@@ -31,7 +33,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { bookingTitle, formatDayLong, statusLabels, toPatientInput } from "../calendarUtils";
+import {
+  bookingTitle,
+  formatDayLong,
+  missesReminder,
+  patientName,
+  reminderLabels,
+  statusLabels,
+  toPatientInput,
+} from "../calendarUtils";
 import { formatMinutes } from "../../Settings/Services/serviceFormat";
 import AppointmentForm, { type AppointmentFormValues } from "./AppointmentForm";
 import GroupParticipants from "./GroupParticipants";
@@ -271,6 +281,41 @@ export default function BookingDetailsDialog({
                     </ul>
                   )}
                 </Detail>
+                {appointment.patients.some((p) => p.reminder) && (
+                  <Detail
+                    icon={missesReminder(appointment) ? <BellOff /> : <Bell />}
+                    label="Recordatorio"
+                  >
+                    <ul className="flex flex-col gap-0.5">
+                      {appointment.patients.map((p) =>
+                        p.reminder ? (
+                          <li
+                            key={p.id}
+                            className={
+                              p.reminder === "missing" || p.reminder === "failed"
+                                ? "text-rose-700 dark:text-rose-400"
+                                : undefined
+                            }
+                          >
+                            {appointment.patients.length > 1 && `${patientName(p)}: `}
+                            {reminderLabels[p.reminder]}
+                          </li>
+                        ) : null,
+                      )}
+                    </ul>
+                    {missesReminder(appointment) && (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {appointment.patients.some((p) => p.reminder === "missing" && p.patientId)
+                          ? "Añade el email en su ficha"
+                          : "Edita la cita para añadir su email"}
+                        {appointment.patients.some((p) => p.reminder === "missing" && p.patientId) &&
+                        appointment.patients.some((p) => p.reminder === "missing" && !p.patientId)
+                          ? ", o edita la cita para los que no tienen ficha."
+                          : "."}
+                      </span>
+                    )}
+                  </Detail>
+                )}
                 <Detail icon={<Stethoscope />} label="Fisio">
                   {appointment.physio.name}
                 </Detail>

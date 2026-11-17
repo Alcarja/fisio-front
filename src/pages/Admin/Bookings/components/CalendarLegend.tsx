@@ -1,9 +1,13 @@
+import { BellOff } from "lucide-react";
+
 type Props = {
   services: { name: string; color: string }[];
+  // The clinic sends reminders: explain the "no reminder" mark
+  reminders?: boolean;
 };
 
 // Below the calendar: what the colors and styles mean
-export default function CalendarLegend({ services }: Props) {
+export default function CalendarLegend({ services, reminders = false }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-muted-foreground">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -42,6 +46,14 @@ export default function CalendarLegend({ services }: Props) {
           <span className="h-3 w-4 rounded-sm bg-muted ring-2 ring-amber-500/70" />
           ⚠ Revisar (ya no encaja)
         </span>
+        {reminders && (
+          <span className="flex items-center gap-1.5">
+            <span className="flex size-4 items-center justify-center rounded-full bg-rose-600 text-white dark:bg-rose-500">
+              <BellOff className="size-2.5" />
+            </span>
+            Sin recordatorio (falta el email)
+          </span>
+        )}
       </div>
     </div>
   );

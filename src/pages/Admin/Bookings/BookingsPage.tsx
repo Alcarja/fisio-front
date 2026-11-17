@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { CircleAlert, Clock, Loader2 } from "lucide-react";
+import { BellOff, CircleAlert, Clock, Loader2 } from "lucide-react";
 import { useAppointments, useCalendarConfig, useMe } from "@/adapters/hook";
-import { hasAccess, manageAllAppointmentsAccess, teamAccess } from "@/lib/roles";
+import { hasAccess, hasFeature, manageAllAppointmentsAccess, teamAccess } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { paths } from "@/routes/paths";
 import {
   addDays,
   formatDayLong,
   formatWeekRange,
+  missesReminder,
   openingFor,
   startOfWeek,
   toIsoDate,
@@ -95,6 +96,13 @@ export default function BookingsPage() {
     view === "day" ? anchor : (days.find((d) => toIsoDate(d) === toIsoDate(now)) ?? monday);
   const suggestedTime = dayOpening(suggestedDay)?.ranges[0]?.startTime ?? "09:00";
 
+  // Upcoming appointments on screen where someone won't get a reminder
+  const visibleIsos = new Set(days.map(toIsoDate));
+  const withoutReminder = allAppointments.filter(
+    (a) =>
+      visibleIsos.has(a.date) && (!physioId || a.physio.userId === physioId) && missesReminder(a),
+  ).length;
+
   const selected = allAppointments.find((a) => a.id === selectedId) ?? null;
   const canManage = hasAccess(me, teamAccess); // owners and admins (settings, delete)
   // Owners, admins and reception change any appointment; physios only their own
@@ -131,6 +139,22 @@ export default function BookingsPage() {
             ) : (
               " Pide al propietario o a un administrador que lo configure."
             )}
+          </span>
+        </div>
+      )}
+
+      {withoutReminder > 0 && (
+        <div className="flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-sm">
+          <BellOff className="mt-0.5 size-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <span>
+            {withoutReminder === 1
+              ? "1 cita próxima de este periodo no recibirá recordatorio"
+              : `${withoutReminder} citas próximas de este periodo no recibirán recordatorio`}{" "}
+            porque falta el email del paciente. Están marcadas con{" "}
+            <span className="inline-flex size-4 translate-y-0.5 items-center justify-center rounded-full bg-rose-600 text-white dark:bg-rose-500">
+              <BellOff className="size-2.5" />
+            </span>{" "}
+            en la agenda: ábrelas para ver cómo añadirlo.
           </span>
         </div>
       )}
@@ -182,7 +206,9 @@ export default function BookingsPage() {
         now={now}
       />
 
-      {settings.services.length > 0 && <CalendarLegend services={settings.services} />}
+      {settings.services.length > 0 && (
+        <CalendarLegend services={settings.services} reminders={hasFeature(me, "reminders")} />
+      )}
 
       {creating && (
         <NewAppointmentDialog
