@@ -749,3 +749,57 @@ export const useMonthlyReport = (activeClinicId: string | undefined, month: stri
     placeholderData: keepPreviousData,
   });
 };
+
+//Mi web (owners and admins, "website" feature)
+export const useSite = (activeClinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["site", activeClinicId],
+    queryFn: api.getSite,
+    enabled: !!activeClinicId,
+  });
+
+// Every site call answers with the whole SiteData: put it straight in the cache
+const useSiteMutation = <TVariables>(mutationFn: (variables: TVariables) => Promise<api.SiteData>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (data) =>
+      queryClient.setQueriesData<api.SiteData>({ queryKey: ["site"] }, () => data),
+  });
+};
+
+export const useSaveSiteDraft = () => useSiteMutation(api.saveSiteDraft);
+export const useChangeSiteSubdomain = () => useSiteMutation(api.changeSiteSubdomain);
+export const usePublishSite = () => useSiteMutation(() => api.publishSite());
+export const useUnpublishSite = () => useSiteMutation(() => api.unpublishSite());
+
+export const useSitePreviewUrl = () => useMutation({ mutationFn: api.getSitePreviewUrl });
+
+export const useUploadSiteImage = () => useMutation({ mutationFn: api.uploadSiteImage });
+
+// Deleting also changes the draft and team photos: reload both
+export const useDeleteSiteImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteSiteImage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site"] });
+      queryClient.invalidateQueries({ queryKey: ["siteTeam"] });
+    },
+  });
+};
+
+export const useSiteTeam = (activeClinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["siteTeam", activeClinicId],
+    queryFn: api.getSiteTeam,
+    enabled: !!activeClinicId,
+  });
+
+export const useUpdateSiteTeamMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateSiteTeamMember,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["siteTeam"] }),
+  });
+};

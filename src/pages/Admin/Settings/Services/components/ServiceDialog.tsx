@@ -2,8 +2,11 @@ import { useState, type FormEvent } from "react";
 import { Check, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type { Room, RoomType, Service, ServiceInput } from "@/adapters/api";
-import { useCreateService, useUpdateService } from "@/adapters/hook";
+import { useCreateService, useMe, useUpdateService } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { hasFeature } from "@/lib/roles";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +26,7 @@ const MIN_DURATION = 5;
 const MAX_DURATION = 480;
 const MAX_BUFFER = 120;
 const MAX_GROUP_PATIENTS = 100;
+const MAX_PUBLIC_DESCRIPTION = 1000;
 
 type Props = {
   // Leave out to create a new service
@@ -42,6 +46,8 @@ const toForm = (s?: Service) => ({
   isGroup: s?.isGroup ?? false,
   maxPatients: String(s && s.isGroup ? s.maxPatients : 4),
   color: s?.color ?? serviceColors[0]!,
+  publicDescription: s?.publicDescription ?? "",
+  showOnWeb: s?.showOnWeb ?? true,
 });
 
 const intBetween = (value: string, min: number, max: number) => {
@@ -56,6 +62,9 @@ export default function ServiceDialog({ service, roomTypes, rooms, open, onOpenC
   const create = useCreateService();
   const update = useUpdateService();
   const pending = create.isPending || update.isPending;
+  // The website fields only matter in clinics with Mi web
+  const { data: me } = useMe();
+  const hasWebsite = hasFeature(me, "website");
 
   const set = <K extends keyof ReturnType<typeof toForm>>(
     key: K,
@@ -99,6 +108,10 @@ export default function ServiceDialog({ service, roomTypes, rooms, open, onOpenC
       isGroup: form.isGroup,
       maxPatients,
       color: form.color,
+      ...(hasWebsite && {
+        publicDescription: form.publicDescription.trim() || null,
+        showOnWeb: form.showOnWeb,
+      }),
     };
     const callbacks = {
       onSuccess: () => {
@@ -286,6 +299,39 @@ export default function ServiceDialog({ service, roomTypes, rooms, open, onOpenC
                 })}
               </div>
             </div>
+
+            {/* Mi web */}
+            {hasWebsite && (
+              <div className="flex flex-col gap-3 border-t pt-5">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="service-show-on-web"
+                    checked={form.showOnWeb}
+                    onCheckedChange={(v) => set("showOnWeb", v === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="flex flex-col gap-0.5">
+                    <Label htmlFor="service-show-on-web">Mostrar en la web</Label>
+                    <span className="text-xs text-muted-foreground">
+                      En la sección de servicios de tu web (Mi web).
+                    </span>
+                  </div>
+                </div>
+                {form.showOnWeb && (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="service-public-description">Descripción para la web</Label>
+                    <Textarea
+                      id="service-public-description"
+                      rows={3}
+                      maxLength={MAX_PUBLIC_DESCRIPTION}
+                      placeholder="Qué es, para quién y qué incluye la sesión."
+                      value={form.publicDescription}
+                      onChange={(e) => set("publicDescription", e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>

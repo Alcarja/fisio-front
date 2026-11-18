@@ -15,7 +15,9 @@ import {
   remindersAccess,
   superadminAccess,
   teamAccess,
+  websiteAccess,
 } from "@/lib/roles";
+import WebsitePage from "@/pages/Admin/Website/WebsitePage";
 import BookingsPage from "@/pages/Admin/Bookings/BookingsPage";
 import PatientsPage from "@/pages/Admin/Patients/PatientsPage";
 import PatientDetailsPage from "@/pages/Admin/Patients/[patientId]/PatientDetailsPage";
@@ -126,6 +128,15 @@ export const router = createBrowserRouter([
         children: [
           { path: paths.adminTeam, element: <TeamPage /> },
           { path: paths.adminReports, element: <ReportsPage /> },
+          // Mi web: only if a superadmin switched the feature on for the clinic
+          {
+            path: paths.adminWebsite,
+            element: (
+              <RequireRole access={websiteAccess} redirectTo={paths.admin}>
+                <WebsitePage />
+              </RequireRole>
+            ),
+          },
           // Header + tabs, and the chosen section inside it
           {
             path: paths.adminSettings,

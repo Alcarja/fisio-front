@@ -13,6 +13,7 @@ import Choice from "./components/Choice";
 import Message from "./components/Message";
 import SlotPicker from "./components/SlotPicker";
 import Step from "./components/Step";
+import { useEmbed } from "./useEmbed";
 
 const MAX_NOTES = 500; // same as the backend
 
@@ -32,6 +33,8 @@ export default function PublicBookingPage() {
   const { slug } = useParams();
   const { data: booking, isPending, error } = usePublicBooking(slug);
   const create = useCreatePublicBooking();
+  // Inside a clinic's website (?embed=1): see useEmbed
+  const embed = useEmbed();
 
   const [serviceId, setServiceId] = useState<string | null>(null);
   // null: anyone available
@@ -46,7 +49,7 @@ export default function PublicBookingPage() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-svh items-center justify-center">
+      <div className={`flex items-center justify-center ${embed ? "py-16" : "min-h-svh"}`}>
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -55,7 +58,11 @@ export default function PublicBookingPage() {
   // Unknown clinic, or online booking switched off
   if (error || !slug) {
     return (
-      <Message icon={<CalendarX className="size-5 text-primary" />} title="Reservas no disponibles">
+      <Message
+        embed={embed}
+        icon={<CalendarX className="size-5 text-primary" />}
+        title="Reservas no disponibles"
+      >
         Esta clínica no acepta reservas online en este momento. Ponte en contacto con ella para
         pedir tu cita.
       </Message>
@@ -65,7 +72,11 @@ export default function PublicBookingPage() {
   if (create.isSuccess && create.data) {
     const done = create.data;
     return (
-      <Message icon={<CalendarCheck className="size-5 text-primary" />} title="¡Cita reservada!">
+      <Message
+        embed={embed}
+        icon={<CalendarCheck className="size-5 text-primary" />}
+        title="¡Cita reservada!"
+      >
         <span className="flex flex-col gap-4">
           <span>
             Te esperamos en <strong className="text-foreground">{done.clinicName}</strong>.
@@ -83,7 +94,12 @@ export default function PublicBookingPage() {
             {cancellationNote(booking.cancellation)}
           </span>
           <Button asChild variant="outline" className="h-11 rounded-full">
-            <Link to={generatePath(paths.publicBookingManage, { slug, token: done.token })}>
+            {/* Embedded: the appointment page opens in its own tab, full
+                size, out of the clinic's site */}
+            <Link
+              to={generatePath(paths.publicBookingManage, { slug, token: done.token })}
+              {...(embed && { target: "_blank", rel: "noopener" })}
+            >
               Ver mi cita
             </Link>
           </Button>
@@ -134,14 +150,27 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 py-10 sm:py-14">
-      <header className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-coral">{booking.clinic.name}</span>
-        <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">
-          Reserva tu cita
-        </h1>
-        <p className="text-muted-foreground">Elige lo que necesitas y la hora que mejor te venga.</p>
-      </header>
+    <div
+      className={
+        embed
+          ? // No full-screen height: the frame takes the content's height.
+            // p-1 keeps the cards' borders from touching the frame's edge
+            "mx-auto flex max-w-2xl flex-col gap-4 p-1"
+          : "mx-auto flex min-h-svh max-w-2xl flex-col gap-6 px-4 py-10 sm:py-14"
+      }
+    >
+      {/* Embedded, the clinic's own page already says where you are */}
+      {!embed && (
+        <header className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-coral">{booking.clinic.name}</span>
+          <h1 className="font-display text-5xl leading-none tracking-tight sm:text-6xl">
+            Reserva tu cita
+          </h1>
+          <p className="text-muted-foreground">
+            Elige lo que necesitas y la hora que mejor te venga.
+          </p>
+        </header>
+      )}
 
       {!canBook ? (
         <p className="rounded-[1.75rem] border border-dashed bg-card p-6 text-sm text-muted-foreground">
@@ -327,6 +356,7 @@ export default function PublicBookingPage() {
                     <Link
                       to={`${paths.privacy}#pacientes`}
                       target="_blank"
+                      rel="noopener"
                       className="underline underline-offset-4"
                     >
                       Más información

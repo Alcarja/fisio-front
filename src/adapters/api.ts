@@ -20,7 +20,12 @@ export type Membership = {
 
 // Optional features a superadmin switches on per clinic (off by default).
 // Mirrors back/src/lib/features.ts; labels for the panel in lib/features.ts
-export type ClinicFeature = "invoicing" | "clinical_history" | "online_booking" | "reminders";
+export type ClinicFeature =
+  | "invoicing"
+  | "clinical_history"
+  | "online_booking"
+  | "reminders"
+  | "website";
 
 // GET /me response
 export type Me = {
@@ -1182,9 +1187,15 @@ export type Service = {
   maxPatients: number; // 1 when individual
   color: string; // "#RRGGBB" in the calendar
   isActive: boolean; // services with appointments are deactivated, not deleted
+  // On the clinic's website (Mi web, "website" feature)
+  publicDescription: string | null;
+  showOnWeb: boolean;
 };
 
-export type ServiceInput = Omit<Service, "id" | "roomTypeName" | "isActive">;
+export type ServiceInput = Omit<
+  Service,
+  "id" | "roomTypeName" | "isActive" | "publicDescription" | "showOnWeb"
+> & { publicDescription?: string | null; showOnWeb?: boolean };
 
 const SERVICES_PATH = "/api/clinic/settings/services";
 
@@ -1681,4 +1692,156 @@ export type MonthlyReport = {
 // GET /clinic/reports/monthly?month=YYYY-MM
 export const getMonthlyReport = async (month: string): Promise<MonthlyReport> => {
   return stpApi.get("/api/clinic/reports/monthly", { params: { month } });
+};
+
+//Mi web: the clinic's website (owners and admins, "website" feature)
+// Mirrors back/src/lib/site.ts and back/src/controllers/site.controller.ts
+
+export type SiteFont = "moderna" | "clasica" | "redondeada";
+export type SiteSection = "services" | "team" | "about" | "gallery" | "faq" | "hours";
+
+// Everything the clinic edits, the same for every template. Plain text only
+export type SiteContent = {
+  theme: { primary: string; accent?: string; font: SiteFont };
+  logoId?: string;
+  coverId?: string;
+  galleryIds: string[]; // max 8
+  hero: { title: string; subtitle?: string };
+  about?: { title?: string; text: string };
+  highlights: { title: string; text?: string }[]; // "Por qué nosotros", max 6
+  faq: { q: string; a: string }[]; // max 12
+  contact: {
+    phone?: string;
+    whatsapp?: string;
+    email?: string;
+    address?: string;
+    postalCode?: string;
+    city?: string;
+    mapsUrl?: string;
+    instagram?: string;
+    facebook?: string;
+    linkedin?: string;
+  };
+  healthRegistry?: string;
+  sections: Record<SiteSection, boolean>;
+  seo: { title?: string; description?: string };
+};
+
+export type SiteStatus = "draft" | "published" | "offline";
+
+export type SiteTemplate = { key: string; label: string; description: string; public: boolean };
+
+export type SiteLegal = {
+  legalName: string | null;
+  taxId: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+};
+
+export type ClinicSite = {
+  subdomain: string;
+  template: string;
+  customTemplate: string | null;
+  draft: SiteContent;
+  published: SiteContent | null;
+  publishedTemplate: string | null;
+  status: SiteStatus;
+  publishedAt: string | null;
+  showKineflowCredit: boolean;
+  updatedAt: string;
+  hasUnpublishedChanges: boolean;
+};
+
+// What every Mi web call answers with
+export type SiteData = {
+  site: ClinicSite;
+  templates: SiteTemplate[];
+  legal: SiteLegal | null;
+  legalMissing: string[]; // e.g. ["titular", "NIF/CIF"]
+  problems: string[]; // what stops publishing; empty = can publish
+  publicUrl: string; // https://<subdomain>.sites.kineflow.es
+  previewAvailable: boolean; // false until the sites service exists
+};
+
+export type SiteImageKind = "logo" | "cover" | "gallery" | "team";
+
+export type SiteTeamMember = {
+  memberId: string;
+  name: string; // the user's name
+  role: ClinicRole;
+  visible: boolean;
+  displayName: string | null; // null = the user's name
+  headline: string | null;
+  bio: string | null;
+  licenseNumber: string | null;
+  photoId: string | null;
+  sortOrder: number;
+};
+
+export type SiteTeamInput = Omit<SiteTeamMember, "memberId" | "name" | "role">;
+
+const SITE_PATH = "/api/clinic/site";
+
+// GET -> the site (created with example texts the first time)
+export const getSite = async (): Promise<SiteData> => stpApi.get(SITE_PATH);
+
+// PUT /draft -> SiteData. What the clinic is editing (visitors don't see it yet)
+export const saveSiteDraft = async (data: {
+  content: SiteContent;
+  template?: string;
+}): Promise<SiteData> => stpApi.put(`${SITE_PATH}/draft`, data);
+
+// PUT /subdomain -> SiteData. 409 if another clinic has it
+export const changeSiteSubdomain = async (subdomain: string): Promise<SiteData> =>
+  stpApi.put(`${SITE_PATH}/subdomain`, { subdomain });
+
+// POST /publish -> SiteData. 400 CANNOT_PUBLISH if something is missing
+export const publishSite = async (): Promise<SiteData> => stpApi.post(`${SITE_PATH}/publish`, {});
+
+// POST /unpublish -> SiteData. The site goes offline
+export const unpublishSite = async (): Promise<SiteData> =>
+  stpApi.post(`${SITE_PATH}/unpublish`, {});
+
+// POST /preview-token -> a 15-minute link to see the draft
+export const getSitePreviewUrl = async (): Promise<{ url: string; expiresAt: string }> =>
+  stpApi.post(`${SITE_PATH}/preview-token`, {});
+
+// POST /images?kind= -> 201 { image }. Doesn't change the draft: save the id in it
+export const uploadSiteImage = async ({
+  kind,
+  image,
+}: {
+  kind: SiteImageKind;
+  image: Blob;
+}): Promise<{ id: string; kind: SiteImageKind }> => {
+  const { image: created } = await stpApi.upload(`${SITE_PATH}/images`, image, { kind });
+  return created;
+};
+
+// DELETE /images/:id -> 204. Also removed from the draft and from team profiles
+export const deleteSiteImage = async (id: string): Promise<void> => {
+  await stpApi.delete(`${SITE_PATH}/images/${encodeURIComponent(id)}`);
+};
+
+// The image needs the session cookie, so it's fetched and shown from memory.
+// An id's image never changes
+export const getSiteImage = (id: string): Promise<Blob> =>
+  stpApi.download(`${SITE_PATH}/images/${encodeURIComponent(id)}`);
+
+// GET /team -> the professionals and their public profiles
+export const getSiteTeam = async (): Promise<SiteTeamMember[]> => {
+  const { team } = await stpApi.get(`${SITE_PATH}/team`);
+  return team;
+};
+
+// PUT /team/:memberId -> 204. Live on the website at once
+export const updateSiteTeamMember = async ({
+  memberId,
+  data,
+}: {
+  memberId: string;
+  data: SiteTeamInput;
+}): Promise<void> => {
+  await stpApi.put(`${SITE_PATH}/team/${encodeURIComponent(memberId)}`, data);
 };

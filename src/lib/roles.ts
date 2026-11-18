@@ -41,6 +41,11 @@ export const remindersAccess: AccessRule = {
   feature: "reminders",
 };
 
+export const websiteAccess: AccessRule = {
+  clinic: ["owner", "admin"],
+  feature: "website",
+};
+
 export const clinicalAccess: AccessRule = {
   clinic: ["owner", "admin", "physio"],
   feature: "clinical_history",

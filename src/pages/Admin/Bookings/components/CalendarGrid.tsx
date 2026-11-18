@@ -1,15 +1,22 @@
+import { Popover } from "radix-ui";
 import { cn } from "@/lib/utils";
 import {
   HOUR_HEIGHT,
   blockPosition,
   formatDayName,
   isSameDay,
+  bookingTitle,
   layoutOverlaps,
   toMinutes,
   type DayOpening,
 } from "../calendarUtils";
 import type { Appointment } from "@/adapters/api";
 import BookingBlock from "./BookingBlock";
+
+// Week view: at most this many appointments side by side. With more at the
+// same time (a big team), the last lane becomes a "+N" button with the rest:
+// narrower blocks than this can't be read
+const MAX_WEEK_LANES = 3;
 
 // Diagonal stripes for the hours the clinic is closed
 const closedPattern = {
@@ -132,6 +139,15 @@ export default function CalendarGrid({
           const opening = openingFor(day);
           const closedAllDay = opening !== null && opening.ranges.length === 0;
           const placed = layoutOverlaps(bookingsFor(day));
+          // Groups too wide for the week view: their extra appointments go in a "+N"
+          const crowded = new Set(
+            isWeek ? placed.filter((p) => p.columns > MAX_WEEK_LANES).map((p) => p.group) : [],
+          );
+          const visible = placed.filter((p) => !crowded.has(p.group) || p.column < MAX_WEEK_LANES - 1);
+          const overflow = [...crowded].map((group) => ({
+            group,
+            items: placed.filter((p) => p.group === group && p.column >= MAX_WEEK_LANES - 1).map((p) => p.item),
+          }));
 
           return (
             <div
@@ -170,8 +186,9 @@ export default function CalendarGrid({
               )}
 
               {/* Appointments: side by side when they overlap */}
-              {placed.map(({ item, column, columns }) => {
+              {visible.map(({ item, column, columns, group }) => {
                 const { top, height } = blockPosition(item.startTime, item.durationMinutes, startHour);
+                const lanes = crowded.has(group) ? MAX_WEEK_LANES : columns;
                 return (
                   <div
                     key={item.id}
@@ -179,11 +196,31 @@ export default function CalendarGrid({
                     style={{
                       top,
                       height,
-                      left: `${(column / columns) * 100}%`,
-                      width: `${100 / columns}%`,
+                      left: `${(column / lanes) * 100}%`,
+                      width: `${100 / lanes}%`,
                     }}
                   >
                     <BookingBlock appointment={item} height={height} onSelect={onSelect} />
+                  </div>
+                );
+              })}
+
+              {/* "+N": the appointments that don't fit side by side */}
+              {overflow.map(({ group, items }) => {
+                const first = Math.min(...items.map((i) => toMinutes(i.startTime)));
+                const last = Math.max(...items.map((i) => toMinutes(i.startTime) + i.durationMinutes));
+                return (
+                  <div
+                    key={group}
+                    className="absolute z-20 p-0.5"
+                    style={{
+                      top: toPx(first),
+                      height: Math.max(toPx(last) - toPx(first), 28),
+                      left: `${((MAX_WEEK_LANES - 1) / MAX_WEEK_LANES) * 100}%`,
+                      width: `${100 / MAX_WEEK_LANES}%`,
+                    }}
+                  >
+                    <OverflowButton items={items} onSelect={onSelect} />
                   </div>
                 );
               })}
@@ -204,5 +241,61 @@ export default function CalendarGrid({
         })}
       </div>
     </div>
+  );
+}
+
+// The appointments that didn't fit, behind a "+N". Click: the list, and each
+// one opens its details. In the day view there's always room, so it never shows
+function OverflowButton({ items, onSelect }: { items: Appointment[]; onSelect: (a: Appointment) => void }) {
+  const sorted = [...items].sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          aria-label={`${items.length} citas más a esta hora`}
+          className="flex h-full w-full cursor-pointer flex-col items-center justify-start gap-1 rounded-lg border border-dashed border-primary/40 bg-secondary/70 px-1 py-1.5 text-xs font-medium text-primary transition-colors outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          +{items.length}
+          <span className="flex flex-wrap justify-center gap-0.5">
+            {sorted.slice(0, 6).map((a) => (
+              <span key={a.id} className="size-1.5 rounded-full" style={{ backgroundColor: a.service.color }} />
+            ))}
+          </span>
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="right"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          className="z-50 flex w-72 flex-col gap-1 rounded-xl border bg-popover p-2 text-sm text-popover-foreground shadow-lg"
+        >
+          <span className="px-2 py-1 text-xs text-muted-foreground">
+            {items.length} citas más a esta hora
+          </span>
+          {sorted.map((a) => (
+            <Popover.Close asChild key={a.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(a)}
+                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
+              >
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: a.service.color }} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className={cn("truncate font-medium", a.status === "cancelled" && "line-through")}>
+                    {bookingTitle(a)}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {a.startTime}–{a.endTime} · {a.physio.name} · {a.room.name}
+                  </span>
+                </span>
+              </button>
+            </Popover.Close>
+          ))}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

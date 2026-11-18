@@ -23,6 +23,8 @@ export const paths = {
   adminTeam: "/admin/team",
   // Monthly report of the active clinic's appointments: owners and admins only
   adminReports: "/admin/reports",
+  // The clinic's website (Mi web): owners and admins, "website" feature
+  adminWebsite: "/admin/website",
   // Active clinic's settings: owners and admins only. Opens on the schedule
   adminSettings: "/admin/settings",
   adminSettingsSchedule: "/admin/settings/schedule",

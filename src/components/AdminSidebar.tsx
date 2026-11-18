@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ChartColumn,
   Dumbbell,
+  Globe,
   LayoutDashboard,
   Settings,
   UserRound,
@@ -24,6 +25,7 @@ import {
   patientsAccess,
   superadminAccess,
   teamAccess,
+  websiteAccess,
   type AccessRule,
 } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -93,6 +95,7 @@ const sections: SidebarSection[] = [
     items: [
       { label: "Equipo", icon: Users, to: paths.adminTeam },
       { label: "Informes", icon: ChartColumn, to: paths.adminReports },
+      { label: "Mi web", icon: Globe, to: paths.adminWebsite, access: websiteAccess },
       { label: "Configuración", icon: Settings, to: paths.adminSettings },
     ],
   },

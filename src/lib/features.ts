@@ -34,4 +34,10 @@ export const clinicFeatures: {
     description:
       "Los pacientes reciben un email antes de su cita. Aquí solo se pone a disposición de la clínica: después la clínica los enciende en Configuración → Recordatorios y elige cuándo se envían. Si se desactiva aquí, dejan de enviarse aunque la clínica los tenga encendidos.",
   },
+  {
+    key: "website",
+    label: "Web de la clínica",
+    description:
+      "La clínica crea su web con nuestras plantillas en Mi web, con su dominio o un subdominio gratuito. Si se desactiva, la web deja de estar disponible.",
+  },
 ];

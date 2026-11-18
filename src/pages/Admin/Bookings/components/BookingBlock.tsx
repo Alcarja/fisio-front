@@ -1,7 +1,10 @@
-import { BellOff, Check, DoorOpen, TriangleAlert, Users } from "lucide-react";
+import { BellOff, Check, Clock, DoorOpen, Stethoscope, TriangleAlert, User, Users } from "lucide-react";
+import { HoverCard } from "radix-ui";
+import type { ReactNode } from "react";
 import type { Appointment } from "@/adapters/api";
 import { cn } from "@/lib/utils";
 import { bookingTitle, missesReminder, patientName, statusLabels } from "../calendarUtils";
+import { formatMinutes } from "../../Settings/Services/serviceFormat";
 
 type Props = {
   appointment: Appointment;
@@ -27,22 +30,15 @@ export default function BookingBlock({ appointment, height, onSelect }: Props) {
   const noReminder = missesReminder(appointment);
 
   return (
+    // Hovering shows the details (handy when several appointments share the
+    // hour and each block is narrow). A click opens them in full, as before.
+    // On touch screens there's no hover: the click is the way
+    <HoverCard.Root openDelay={250} closeDelay={80}>
+      <HoverCard.Trigger asChild>
     <button
       type="button"
       onClick={() => onSelect(appointment)}
-      // Native tooltip with everything, for short blocks
-      title={[
-        title,
-        service.isGroup ? appointment.patients.map(patientName).join(", ") : service.name,
-        range,
-        appointment.physio.name,
-        appointment.room.name,
-        statusLabels[status],
-        ...appointment.issues.map((i) => `⚠ ${i.message}`),
-        noReminder ? "🔕 Sin recordatorio: falta el email del paciente" : "",
-      ]
-        .filter(Boolean)
-        .join("\n")}
+      aria-label={`${title}, ${range}, ${appointment.physio.name}`}
       className={cn(
         "relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-lg border-l-[3px] px-2 py-1 text-left text-xs leading-tight shadow-[0_1px_2px_rgb(0_0_0/0.06)] transition-shadow outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50",
         status === "booked" && "border border-l-[3px] border-dashed",
@@ -102,5 +98,74 @@ export default function BookingBlock({ appointment, height, onSelect }: Props) {
         </>
       )}
     </button>
+      </HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="right"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          className="z-50 w-72 rounded-xl border bg-popover p-3 text-sm text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        >
+          <BookingSummary appointment={appointment} />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
+  );
+}
+
+// What the hover card shows: everything needed to know the session at a glance
+function BookingSummary({ appointment }: { appointment: Appointment }) {
+  const { service, status } = appointment;
+  const missing = appointment.patients.filter((p) => p.reminder === "missing");
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-start gap-2">
+        <span className="mt-1 size-2.5 shrink-0 rounded-full" style={{ backgroundColor: service.color }} />
+        <div className="flex min-w-0 flex-col">
+          <span className={cn("font-medium", status === "cancelled" && "line-through")}>{bookingTitle(appointment)}</span>
+          <span className="text-xs text-muted-foreground">
+            {service.name} · {statusLabels[status]}
+          </span>
+        </div>
+      </div>
+      <dl className="flex flex-col gap-1 text-xs">
+        <Row icon={<Clock />}>
+          {appointment.startTime}–{appointment.endTime} ({formatMinutes(appointment.durationMinutes)})
+        </Row>
+        <Row icon={<Stethoscope />}>{appointment.physio.name}</Row>
+        <Row icon={<DoorOpen />}>{appointment.room.name}</Row>
+        <Row icon={service.isGroup ? <Users /> : <User />}>
+          {service.isGroup
+            ? `${appointment.patients.length}/${service.maxPatients}: ${appointment.patients.map(patientName).join(", ")}`
+            : appointment.patients.map(patientName).join(", ")}
+        </Row>
+      </dl>
+      {appointment.notes && (
+        <p className="line-clamp-3 rounded-lg bg-muted px-2 py-1.5 text-xs text-muted-foreground">{appointment.notes}</p>
+      )}
+      {appointment.issues.length > 0 && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+          {appointment.issues.map((i) => i.message).join(" · ")}
+        </p>
+      )}
+      {missing.length > 0 && (
+        <p className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
+          <BellOff className="mt-0.5 size-3.5 shrink-0" />
+          Sin recordatorio: falta el email de {missing.map(patientName).join(", ")}
+        </p>
+      )}
+      <span className="text-[11px] text-muted-foreground">Haz clic para ver o editar la cita</span>
+    </div>
+  );
+}
+
+function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-px text-muted-foreground [&_svg]:size-3.5">{icon}</span>
+      <span className="min-w-0">{children}</span>
+    </div>
   );
 }

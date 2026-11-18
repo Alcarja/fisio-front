@@ -129,12 +129,14 @@ export const formatMonthYear = (date: Date) => monthYear.format(date);
 
 // Side-by-side layout for appointments that overlap in the same day.
 // Each item gets a column and the number of columns of its group, so two
-// appointments at the same time are drawn next to each other, not on top
+// appointments at the same time are drawn next to each other, not on top.
+// `group` numbers each set of appointments that overlap each other
 export function layoutOverlaps<T extends { startTime: string; durationMinutes: number }>(
   items: T[],
-): { item: T; column: number; columns: number }[] {
+): { item: T; column: number; columns: number; group: number }[] {
   const sorted = [...items].sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime));
-  const result: { item: T; column: number; columns: number }[] = [];
+  const result: { item: T; column: number; columns: number; group: number }[] = [];
+  let groupIndex = 0;
 
   // Groups of appointments that overlap each other (directly or in a chain)
   let group: { item: T; column: number; end: number }[] = [];
@@ -142,8 +144,9 @@ export function layoutOverlaps<T extends { startTime: string; durationMinutes: n
 
   const closeGroup = () => {
     const columns = Math.max(1, ...group.map((g) => g.column + 1));
-    for (const g of group) result.push({ item: g.item, column: g.column, columns });
+    for (const g of group) result.push({ item: g.item, column: g.column, columns, group: groupIndex });
     group = [];
+    groupIndex++;
   };
 
   for (const item of sorted) {

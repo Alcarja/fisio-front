@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { paths } from "@/routes/paths";
 import { formatLongDate, hoursLabel } from "./bookingFormat";
 import Message from "./components/Message";
+import { useEmbed } from "./useEmbed";
 
 // Why the cancel button isn't there
 const blockedText = (booking: PatientBooking) => {
@@ -30,10 +31,13 @@ export default function ManageBookingPage() {
   const { data: booking, isPending, error } = usePatientBooking({ slug, token });
   const cancel = useCancelPatientBooking();
   const [confirming, setConfirming] = useState(false);
+  // Normally opened from the confirmation email, full page; embed mode only
+  // in case it ends up inside a clinic's website (see useEmbed)
+  const embed = useEmbed();
 
   if (isPending) {
     return (
-      <div className="flex min-h-svh items-center justify-center">
+      <div className={`flex items-center justify-center ${embed ? "py-16" : "min-h-svh"}`}>
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -41,7 +45,11 @@ export default function ManageBookingPage() {
 
   if (error || !slug || !token) {
     return (
-      <Message icon={<CalendarX className="size-5 text-primary" />} title="Cita no encontrada">
+      <Message
+        embed={embed}
+        icon={<CalendarX className="size-5 text-primary" />}
+        title="Cita no encontrada"
+      >
         <p>No encontramos esta cita. Revisa el enlace de tu email o llama a la clínica.</p>
       </Message>
     );
@@ -58,13 +66,20 @@ export default function ManageBookingPage() {
   );
   const bookAgain = (
     <Button asChild variant="outline" className="h-11 rounded-full">
-      <Link to={generatePath(paths.publicBooking, { slug })}>Reservar otra cita</Link>
+      {/* Embedded, stay in embed mode inside the frame */}
+      <Link to={generatePath(paths.publicBooking, { slug }) + (embed ? "?embed=1" : "")}>
+        Reservar otra cita
+      </Link>
     </Button>
   );
 
   if (booking.cancelled) {
     return (
-      <Message icon={<CalendarX className="size-5 text-primary" />} title="Cita cancelada">
+      <Message
+        embed={embed}
+        icon={<CalendarX className="size-5 text-primary" />}
+        title="Cita cancelada"
+      >
         <p>
           Tu cita en <strong className="text-foreground">{booking.clinicName}</strong> está
           cancelada.
@@ -78,7 +93,11 @@ export default function ManageBookingPage() {
   const blocked = blockedText(booking);
 
   return (
-    <Message icon={<CalendarCheck className="size-5 text-primary" />} title="Tu cita">
+    <Message
+      embed={embed}
+      icon={<CalendarCheck className="size-5 text-primary" />}
+      title="Tu cita"
+    >
       <p>
         Te esperamos en <strong className="text-foreground">{booking.clinicName}</strong>.
       </p>
