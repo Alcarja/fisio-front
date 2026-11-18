@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Sparkles } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { colorPresets, dominantColor, fontOptions } from "../siteFormat";
+import { accentPresets, colorPresets, dominantColor, fontOptions } from "../siteFormat";
 import { FieldGroup, type ContentProps } from "./Field";
 import ImageSlot from "./ImageSlot";
 
@@ -68,6 +68,58 @@ export default function BrandFields({ content, onChange }: ContentProps) {
               type="color"
               value={primary}
               onChange={(e) => setTheme({ primary: e.target.value.toLowerCase() })}
+              className="size-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
+            />
+            Otro color
+          </label>
+        </div>
+      </FieldGroup>
+
+      <FieldGroup
+        title="Color secundario"
+        description="Opcional. Detalles, formas decorativas y fondos suaves. Sin él, se usa un tono más oscuro del principal."
+      >
+        <div role="radiogroup" aria-label="Color secundario" className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!content.theme.accent}
+            onClick={() => {
+              const { accent: _accent, ...rest } = content.theme;
+              onChange({ ...content, theme: rest });
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-sm transition-colors",
+              !content.theme.accent ? "border-primary bg-secondary" : "hover:bg-muted",
+            )}
+          >
+            Sin color secundario
+          </button>
+          {accentPresets.map((color) => {
+            const selected = content.theme.accent === color;
+            return (
+              <button
+                key={color}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={color}
+                onClick={() => setTheme({ accent: color })}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-shadow",
+                  selected ? "ring-2 ring-foreground" : "hover:ring-2 hover:ring-border",
+                )}
+                style={{ backgroundColor: color }}
+              >
+                {selected && <Check className="size-4 text-white mix-blend-difference" />}
+              </button>
+            );
+          })}
+          <label className="flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm hover:bg-muted">
+            <input
+              type="color"
+              value={content.theme.accent ?? "#f2b880"}
+              onChange={(e) => setTheme({ accent: e.target.value.toLowerCase() })}
               className="size-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
             />
             Otro color

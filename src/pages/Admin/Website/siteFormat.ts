@@ -61,6 +61,18 @@ export const colorPresets = [
   "#6d28d9", // purple
 ];
 
+// Second colours: lighter, warmer tones that combine with most main colours
+export const accentPresets = [
+  "#f2b880", // apricot
+  "#f4d35e", // sun
+  "#9bd1c4", // mint
+  "#a8c5f0", // sky
+  "#f2a7b5", // rose
+  "#c9b6e4", // lilac
+  "#e07a5f", // terracotta
+  "#3d405b", // ink blue
+];
+
 // Largest side of each kind of photo, in pixels
 const MAX_SIDE: Record<SiteImageKind, number> = { logo: 600, cover: 2000, gallery: 1600, team: 800 };
 
