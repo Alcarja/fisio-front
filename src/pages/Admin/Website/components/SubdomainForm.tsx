@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from "react";
-import { Globe, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { ClinicSite } from "@/adapters/api";
+import type { SiteData } from "@/adapters/api";
 import { useChangeSiteSubdomain } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DomainForm from "./DomainForm";
 import { FieldGroup } from "./Field";
 
 const PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
-// The free address <subdomain>.sites.kineflow.es. Own domains come later (Phase 4)
-export default function SubdomainForm({ site, publicUrl }: { site: ClinicSite; publicUrl: string }) {
+// The free address <subdomain>.sites.kineflow.es, and the clinic's own domain
+export default function SubdomainForm({ data }: { data: SiteData }) {
+  const { site } = data;
   const [value, setValue] = useState(site.subdomain);
   const change = useChangeSiteSubdomain();
   // The domain after the subdomain, from the public URL (sites.kineflow.es)
-  const base = new URL(publicUrl).hostname.slice(site.subdomain.length + 1);
+  const base = new URL(data.subdomainUrl).hostname.slice(site.subdomain.length + 1);
   const subdomain = value.trim().toLowerCase();
   const valid = PATTERN.test(subdomain);
 
@@ -66,12 +68,7 @@ export default function SubdomainForm({ site, publicUrl }: { site: ClinicSite; p
         </form>
       </FieldGroup>
 
-      <FieldGroup title="Dominio propio" description="Por ejemplo, www.tuclinica.es.">
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Globe className="mt-0.5 size-4 shrink-0" />
-          Muy pronto podrás conectar tu propio dominio desde aquí.
-        </p>
-      </FieldGroup>
+      <DomainForm data={data} />
     </>
   );
 }

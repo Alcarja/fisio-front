@@ -770,6 +770,10 @@ const useSiteMutation = <TVariables>(mutationFn: (variables: TVariables) => Prom
 
 export const useSaveSiteDraft = () => useSiteMutation(api.saveSiteDraft);
 export const useChangeSiteSubdomain = () => useSiteMutation(api.changeSiteSubdomain);
+export const useAddSiteDomain = () => useSiteMutation(api.addSiteDomain);
+export const useSetSiteDomainPrimary = () => useSiteMutation(api.setSiteDomainPrimary);
+export const useRemoveSiteDomain = () => useSiteMutation(() => api.removeSiteDomain());
+export const useCheckSiteDomain = () => useSiteMutation(() => api.checkSiteDomain());
 export const usePublishSite = () => useSiteMutation(() => api.publishSite());
 export const useUnpublishSite = () => useSiteMutation(() => api.unpublishSite());
 

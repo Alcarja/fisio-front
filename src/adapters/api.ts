@@ -1760,8 +1760,28 @@ export type SiteData = {
   legal: SiteLegal | null;
   legalMissing: string[]; // e.g. ["titular", "NIF/CIF"]
   problems: string[]; // what stops publishing; empty = can publish
-  publicUrl: string; // https://<subdomain>.sites.kineflow.es
+  publicUrl: string; // the connected own domain, or https://<subdomain>.sites.kineflow.es
+  subdomainUrl: string; // always https://<subdomain>.sites.kineflow.es
   previewAvailable: boolean; // false until the sites service exists
+  domainsAvailable: boolean; // own domains can be connected (the server has its IP set)
+  domain: SiteDomain | null;
+};
+
+// Own domain (Mi web → Dirección). Two hostnames: the apex and www
+export type SiteDomainError = "TXT_MISSING" | "A_WRONG" | "AAAA_LEFTOVER" | "WWW_WRONG";
+export type SiteDomainHost = {
+  hostname: string;
+  isPrimary: boolean;
+  status: "pending" | "verified" | "error";
+  lastError: SiteDomainError | null;
+  lastCheckedAt: string | null;
+  verifiedAt: string | null;
+};
+export type SiteDomain = {
+  apex: string; // punycode (xn--…) for domains with accents
+  primary: "apex" | "www";
+  hosts: SiteDomainHost[];
+  records: { type: "A" | "CNAME" | "TXT"; name: string; value: string }[];
 };
 
 export type SiteImageKind = "logo" | "cover" | "gallery" | "team";
@@ -1795,6 +1815,20 @@ export const saveSiteDraft = async (data: {
 // PUT /subdomain -> SiteData. 409 if another clinic has it
 export const changeSiteSubdomain = async (subdomain: string): Promise<SiteData> =>
   stpApi.put(`${SITE_PATH}/subdomain`, { subdomain });
+
+// POST /domains -> SiteData. 409 if the clinic has one, or another clinic has it
+export const addSiteDomain = async (data: { domain: string; primary: "apex" | "www" }): Promise<SiteData> =>
+  stpApi.post(`${SITE_PATH}/domains`, data);
+
+// PUT /domains/primary -> SiteData. Which version visitors end up on
+export const setSiteDomainPrimary = async (primary: "apex" | "www"): Promise<SiteData> =>
+  stpApi.put(`${SITE_PATH}/domains/primary`, { primary });
+
+// DELETE /domains -> SiteData. The site goes back to the free address
+export const removeSiteDomain = async (): Promise<SiteData> => stpApi.delete(`${SITE_PATH}/domains`);
+
+// POST /domains/check -> SiteData. Checks the DNS now (once per 30 s)
+export const checkSiteDomain = async (): Promise<SiteData> => stpApi.post(`${SITE_PATH}/domains/check`, {});
 
 // POST /publish -> SiteData. 400 CANNOT_PUBLISH if something is missing
 export const publishSite = async (): Promise<SiteData> => stpApi.post(`${SITE_PATH}/publish`, {});

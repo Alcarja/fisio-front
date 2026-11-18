@@ -179,7 +179,7 @@ export default function SiteEditor({ data }: { data: SiteData }) {
             </>
           )}
           {tab === "team" && <TeamEditor />}
-          {tab === "address" && <SubdomainForm site={site} publicUrl={data.publicUrl} />}
+          {tab === "address" && <SubdomainForm data={data} />}
         </div>
 
         <PreviewPanel
