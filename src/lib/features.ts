@@ -13,8 +13,9 @@ export const clinicFeatures: {
 }[] = [
   {
     key: "invoicing",
-    label: "Facturación",
-    description: "La clínica puede generar facturas para sus pacientes desde la plataforma.",
+    label: "Cobros y bonos",
+    description:
+      "La clínica registra lo que cobra a sus pacientes: sesiones de la agenda, sesiones sueltas y bonos (de sesiones o mensuales). No son facturas: la clínica sigue facturando con su gestoría o su programa.",
   },
   {
     key: "clinical_history",

@@ -1,4 +1,4 @@
-import { BellOff, Check, Clock, DoorOpen, Stethoscope, TriangleAlert, User, Users } from "lucide-react";
+import { BellOff, Check, Clock, DoorOpen, Repeat, Stethoscope, TriangleAlert, User, Users } from "lucide-react";
 import { HoverCard } from "radix-ui";
 import type { ReactNode } from "react";
 import type { Appointment } from "@/adapters/api";
@@ -38,7 +38,7 @@ export default function BookingBlock({ appointment, height, onSelect }: Props) {
     <button
       type="button"
       onClick={() => onSelect(appointment)}
-      aria-label={`${title}, ${range}, ${appointment.physio.name}`}
+      aria-label={`${title}, ${range}, ${appointment.physio?.name ?? "sin fisio"}`}
       className={cn(
         "relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-lg border-l-[3px] px-2 py-1 text-left text-xs leading-tight shadow-[0_1px_2px_rgb(0_0_0/0.06)] transition-shadow outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50",
         status === "booked" && "border border-l-[3px] border-dashed",
@@ -52,8 +52,11 @@ export default function BookingBlock({ appointment, height, onSelect }: Props) {
         backgroundColor: `${service.color}1F`,
       }}
     >
-      {(hasIssues || noReminder) && (
+      {(hasIssues || noReminder || (appointment.seriesId && !appointment.detached)) && (
         <span className="absolute top-1 right-1 flex items-center gap-0.5">
+          {appointment.seriesId && !appointment.detached && (
+            <Repeat className="size-3 text-muted-foreground" aria-label="Se repite cada semana" />
+          )}
           {noReminder && (
             <span
               className="flex size-4 items-center justify-center rounded-full bg-rose-600 text-white dark:bg-rose-500"
@@ -84,11 +87,11 @@ export default function BookingBlock({ appointment, height, onSelect }: Props) {
             {title}
           </span>
           <span className="truncate text-muted-foreground">
-            {service.isGroup ? appointment.physio.name : service.name}
+            {service.isGroup ? (appointment.physio?.name ?? "Sin fisio") : service.name}
           </span>
           {roomy && (
             <span className="mt-auto flex flex-col gap-0.5 pt-1 text-[11px] text-muted-foreground">
-              {!service.isGroup && <span className="truncate">{appointment.physio.name}</span>}
+              {!service.isGroup && <span className="truncate">{appointment.physio?.name}</span>}
               <span className="flex items-center gap-1 truncate">
                 {service.isGroup ? <Users className="size-3" /> : <DoorOpen className="size-3" />}
                 {appointment.room.name}
@@ -133,7 +136,7 @@ function BookingSummary({ appointment }: { appointment: Appointment }) {
         <Row icon={<Clock />}>
           {appointment.startTime}–{appointment.endTime} ({formatMinutes(appointment.durationMinutes)})
         </Row>
-        <Row icon={<Stethoscope />}>{appointment.physio.name}</Row>
+        <Row icon={<Stethoscope />}>{appointment.physio?.name ?? "Sin fisio asignado"}</Row>
         <Row icon={<DoorOpen />}>{appointment.room.name}</Row>
         <Row icon={service.isGroup ? <Users /> : <User />}>
           {service.isGroup

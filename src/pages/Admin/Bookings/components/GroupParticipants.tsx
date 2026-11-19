@@ -2,7 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Loader2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Appointment, AppointmentPatientInput } from "@/adapters/api";
-import { useUpdateAppointment } from "@/adapters/hook";
+import { useSetAttendance, useUpdateAppointment } from "@/adapters/hook";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { patientName, toPatientInput } from "../calendarUtils";
 import PatientFields from "./PatientFields";
@@ -25,6 +26,14 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<AppointmentPatientInput>(emptyPatient);
   const update = useUpdateAppointment();
+  const attendance = useSetAttendance();
+  // Group sessions can be left empty (people may join or book later)
+  const canEmpty = true;
+  const mark = (rowId: string, value: "pending" | "attended" | "no_show") =>
+    attendance.mutate(
+      { appointmentId: appointment.id, rows: [{ rowId, attendance: value }] },
+      { onError: (error) => toast.error("No se pudo guardar la asistencia", { description: error.message }) },
+    );
 
   const current: AppointmentPatientInput[] = appointment.patients.map(toPatientInput);
   // A ficha, or both names for someone new
@@ -62,7 +71,36 @@ export default function GroupParticipants({ appointment, maxPatients, canEdit }:
             <span className="flex-1">
               <PatientNameLink patient={p} />
             </span>
-            {canEdit && current.length > 1 && (
+            {canEdit && (
+              // Pasar lista: did they come? Tap again to undo
+              <span className="flex gap-1" role="group" aria-label={`Asistencia de ${patientName(p)}`}>
+                {(
+                  [
+                    ["attended", "Vino"],
+                    ["no_show", "No vino"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={p.attendance === value}
+                    disabled={attendance.isPending}
+                    onClick={() => mark(p.id, p.attendance === value ? "pending" : value)}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-xs transition-colors",
+                      p.attendance === value
+                        ? value === "attended"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-destructive bg-destructive/10 text-destructive"
+                        : "text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </span>
+            )}
+            {canEdit && (current.length > 1 || canEmpty) && (
               <Button
                 type="button"
                 variant="ghost"

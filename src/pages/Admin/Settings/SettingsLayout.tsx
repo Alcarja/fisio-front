@@ -1,5 +1,13 @@
 import { NavLink, Outlet } from "react-router";
-import { Bell, ClipboardList, Clock, DoorOpen, QrCode, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  ClipboardList,
+  Clock,
+  DoorOpen,
+  QrCode,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import type { ClinicFeature } from "@/adapters/api";
 import { useMe } from "@/adapters/hook";
 import { hasFeature } from "@/lib/roles";
@@ -24,6 +32,12 @@ const sections: { label: string; icon: LucideIcon; to: string; feature?: ClinicF
     icon: Bell,
     to: paths.adminSettingsReminders,
     feature: "reminders",
+  },
+  {
+    label: "Cobros",
+    icon: Wallet,
+    to: paths.adminSettingsCharges,
+    feature: "invoicing",
   },
 ];
 

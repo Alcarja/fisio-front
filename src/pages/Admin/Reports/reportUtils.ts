@@ -98,16 +98,18 @@ export function buildMonthReport(appointments: Appointment[], config: CalendarCo
           totals: emptyTotals(),
         })
         .get(a.service.id)!;
+    // Class sessions without a physio yet go in their own row
+    const physioId = a.physio?.userId ?? "sin-fisio";
     const physio =
-      physios.get(a.physio.userId) ??
+      physios.get(physioId) ??
       physios
-        .set(a.physio.userId, {
-          id: a.physio.userId,
-          name: a.physio.name,
+        .set(physioId, {
+          id: physioId,
+          name: a.physio?.name ?? "Sin fisio asignado",
           image: null,
           totals: emptyTotals(),
         })
-        .get(a.physio.userId)!;
+        .get(physioId)!;
 
     const row = (matrix[physio.id] ??= {});
     const cell = (row[service.id] ??= emptyTotals());

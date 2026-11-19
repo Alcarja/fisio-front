@@ -19,6 +19,9 @@ type Props = {
   disabled?: boolean;
   // Shown at the end of the row (e.g. a "remove" button)
   trailing?: ReactNode;
+  // false: used outside an appointment (e.g. a session recorded in Cobros):
+  // no reminder email and hints that don't talk about "the appointment"
+  forAppointment?: boolean;
 };
 
 type Mode = "ficha" | "name";
@@ -46,6 +49,7 @@ export default function PatientFields({
   autoFocus,
   disabled,
   trailing,
+  forAppointment = true,
 }: Props) {
   const { data: me } = useMe();
   // Linking appointments to fichas comes with the "Historia clínica" feature
@@ -53,7 +57,7 @@ export default function PatientFields({
   // A patient linked while the feature was on shows as a plain name without it.
   // Left untouched, the link is kept; retyping the name drops it
   const linked = canLink && !!value.patientId;
-  const reminders = hasFeature(me, "reminders");
+  const reminders = forAppointment && hasFeature(me, "reminders");
   // The ficha just chosen has no email: say it won't get reminders
   const [fichaWithoutEmail, setFichaWithoutEmail] = useState(false);
 
@@ -273,11 +277,17 @@ export default function PatientFields({
       )}
 
       <p className={cn("text-xs text-muted-foreground", !canLink && "hidden")}>
-        {mode === "name"
-          ? "Solo se guarda el nombre en esta cita. No se crea ficha."
-          : linked
-            ? "Enlazada a su ficha: la cita aparecerá en su historial."
-            : "Elige al paciente en la lista para enlazar la cita a su ficha."}
+        {!forAppointment
+          ? mode === "name"
+            ? "Solo se guarda el nombre. No se crea ficha."
+            : linked
+              ? "Enlazada a su ficha."
+              : "Elige al paciente en la lista."
+          : mode === "name"
+            ? "Solo se guarda el nombre en esta cita. No se crea ficha."
+            : linked
+              ? "Enlazada a su ficha: la cita aparecerá en su historial."
+              : "Elige al paciente en la lista para enlazar la cita a su ficha."}
       </p>
     </div>
   );

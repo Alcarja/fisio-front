@@ -983,6 +983,419 @@ export const updateReminderSettings = async (settings: ReminderSettings): Promis
   await stpApi.put(`${REMINDERS_PATH}/settings`, settings);
 };
 
+//Cobros y bonos of the active clinic ("invoicing" feature). Mirrors
+// back/src/lib/charges.ts. Not invoices: the clinic's own record of payments
+export type ChargeSettings = {
+  // "YYYY-MM-DD": sessions before it never show as pending
+  startsOn: string;
+  // No-shows are charged (and use up a bono session)
+  chargeNoShows: boolean;
+};
+
+const CHARGES_PATH = "/api/clinic/charges";
+
+export const getChargeSettings = async (): Promise<ChargeSettings> => {
+  const { settings } = await stpApi.get(`${CHARGES_PATH}/settings`);
+  return settings;
+};
+
+export const updateChargeSettings = async (settings: ChargeSettings): Promise<void> => {
+  await stpApi.put(`${CHARGES_PATH}/settings`, settings);
+};
+
+// Where a session stands for charging (back/src/lib/charges.ts)
+// - upcoming: hasn't happened yet
+// - to_confirm: already started, the appointment isn't marked done or no-show
+// - pending: done (or a no-show the clinic charges), not paid yet
+// - free: done, its service costs 0 €
+// - no_charge: a no-show the clinic doesn't charge
+// - paid: has a payment
+// - waived: the clinic decided not to charge it (with a reason)
+// - review: paid, but its appointment was cancelled or deleted, or the
+//   patient left it: move the payment to another session or refund it
+export type SessionState =
+  | "upcoming"
+  | "to_confirm"
+  | "pending"
+  | "free"
+  | "no_charge"
+  | "paid"
+  | "bono"
+  | "waived"
+  | "review";
+
+export type PaymentMethod = "cash" | "card" | "bizum" | "transfer" | "other";
+
+// One patient in one appointment (group sessions: one per patient)
+export type ChargeSession = {
+  // Stable key, and how the API refers to the session (charge it, its price…)
+  id: string;
+  // "calendar": from an appointment · "manual": recorded in Cobros
+  source: "calendar" | "manual";
+  note: string | null; // manual: why it isn't in the calendar
+  appointmentPatientId: string | null; // null: manual, or the patient left the appointment
+  chargeId: string | null;
+  appointmentId: string | null;
+  startsAt: string;
+  patientId: string | null; // null: no ficha
+  firstName: string;
+  lastName: string;
+  serviceId: string;
+  serviceName: string;
+  serviceColor: string;
+  isGroup: boolean;
+  physioId: string | null;
+  physioName: string | null;
+  priceCents: number;
+  priceChanged: boolean; // differs from the service's price today
+  appointmentStatus: "booked" | "confirmed" | "completed" | "no_show" | "cancelled" | null;
+  attendance: "pending" | "attended" | "no_show" | null;
+  state: SessionState;
+  waivedReason: string | null;
+  bono: { id: string; name: string } | null; // paid with a bono
+  // Paid with a bono that no longer covers it (the appointment changed after):
+  // why. Its state is then "review": take it off the bono
+  bonoProblem: string | null;
+  payment: {
+    id: string;
+    method: PaymentMethod;
+    paidAt: string;
+    amountCents: number;
+    sessionCount: number;
+  } | null;
+};
+
+export type ChargeSessions = {
+  from: string;
+  to: string;
+  settings: ChargeSettings;
+  sessions: ChargeSession[];
+};
+
+// Days "YYYY-MM-DD", both included (at most 93)
+export const getChargeSessions = async (range: { from: string; to: string }): Promise<ChargeSessions> =>
+  stpApi.get(`${CHARGES_PATH}/sessions?from=${range.from}&to=${range.to}`);
+
+// Everything still to sort out since the start date: pending, to_confirm, review
+// Everything still owed since the start date: sessions (pending, to_confirm,
+// review) and bonos sold as pending
+export const getPendingSessions = async (): Promise<{
+  settings: ChargeSettings;
+  sessions: ChargeSession[];
+  bonos: Bono[];
+}> => stpApi.get(`${CHARGES_PATH}/pending`);
+
+export type NewPayment = {
+  sessions: { sessionId: string; priceCents?: number }[];
+  method: PaymentMethod;
+  paidOn?: string; // "YYYY-MM-DD", today or earlier
+  note?: string;
+};
+
+export const createPayment = async (body: NewPayment): Promise<{ id: string }> => {
+  const { payment } = await stpApi.post(`${CHARGES_PATH}/payments`, body);
+  return payment;
+};
+
+export type PaymentDetails = {
+  id: string;
+  kind: "sessions" | "bono";
+  // A bono's payment: which bono it paid
+  bono: { id: string; name: string; serviceName: string; firstName: string; lastName: string; cancelled: boolean } | null;
+  amountCents: number;
+  method: PaymentMethod;
+  paidAt: string;
+  firstName: string | null;
+  lastName: string | null;
+  note: string | null;
+  recordedByName: string | null;
+  recordedById: string | null;
+  voided: { at: string; reason: string } | null;
+  // Money already given back (negative amounts), oldest first
+  refunds: { id: string; amountCents: number; method: PaymentMethod; paidAt: string; note: string | null }[];
+  sessions: {
+    chargeId: string;
+    appointmentPatientId: string | null;
+    firstName: string;
+    lastName: string;
+    occurredAt: string;
+    serviceName: string;
+    priceCents: number;
+  }[];
+  // "paid" | "voided" | "refunded" | "refunded_partial" | "moved"
+  // sessions: the ones it still pays (refunded ones are released)
+  history: { action: string; at: string; byName: string | null; reason: string | null }[];
+};
+
+export const getPayment = async (paymentId: string): Promise<PaymentDetails> => {
+  const { payment } = await stpApi.get(`${CHARGES_PATH}/payments/${paymentId}`);
+  return payment;
+};
+
+export const voidPayment = async ({ paymentId, reason }: { paymentId: string; reason: string }) => {
+  await stpApi.post(`${CHARGES_PATH}/payments/${paymentId}/void`, { reason });
+};
+
+// chargeIds: the sessions to refund; missing = all the payment still pays
+export const refundPayment = async ({
+  paymentId,
+  method,
+  note,
+  chargeIds,
+}: {
+  paymentId: string;
+  method: PaymentMethod;
+  note?: string;
+  chargeIds?: string[];
+}) => {
+  await stpApi.post(`${CHARGES_PATH}/payments/${paymentId}/refund`, { method, note, chargeIds });
+};
+
+export const movePayment = async ({
+  paymentId,
+  fromChargeId,
+  toSessionId,
+}: {
+  paymentId: string;
+  fromChargeId: string;
+  toSessionId: string;
+}) => {
+  await stpApi.post(`${CHARGES_PATH}/payments/${paymentId}/move`, { fromChargeId, toSessionId });
+};
+
+// sessionId: ChargeSession.id
+export const setSessionPrice = async ({ sessionId, priceCents }: { sessionId: string; priceCents: number }) => {
+  await stpApi.put(`${CHARGES_PATH}/sessions/${sessionId}/price`, { priceCents });
+};
+
+export const waiveSession = async ({ sessionId, reason }: { sessionId: string; reason: string }) => {
+  await stpApi.put(`${CHARGES_PATH}/sessions/${sessionId}/waive`, { reason });
+};
+
+// A calendar session nobody marked yet: came (then pending) or didn't come
+export const markSessionOutcome = async ({
+  sessionId,
+  outcome,
+}: {
+  sessionId: string;
+  outcome: "came" | "no_show";
+}) => {
+  await stpApi.post(`${CHARGES_PATH}/sessions/${sessionId}/outcome`, { outcome });
+};
+
+export const unwaiveSession = async (sessionId: string) => {
+  await stpApi.delete(`${CHARGES_PATH}/sessions/${sessionId}/waive`);
+};
+
+// The month's payments and refunds as a CSV for the accountant (owners and
+// admins). month: "YYYY-MM"
+export const exportChargesMonth = async (month: string): Promise<Blob> =>
+  stpApi.download(`${CHARGES_PATH}/export?month=${month}`);
+
+// Months with payments ("YYYY-MM", newest first). Works with Cobros switched
+// off, to export old records
+export const getChargesArchive = async (): Promise<string[]> => {
+  const { months } = await stpApi.get(`${CHARGES_PATH}/archive`);
+  return months;
+};
+
+// Bono types the clinic sells (Configuración → Cobros). Mirrors back/src/lib/bonos.ts
+export type BonoKind = "sessions" | "monthly";
+
+export type BonoType = {
+  id: string;
+  name: string;
+  serviceId: string | null; // null: its service was deleted
+  serviceName: string;
+  servicePriceCents: number | null; // a session without the bono, today
+  sellable: boolean; // active and its service still active
+  kind: BonoKind;
+  sessions: number | null; // "sessions": how many
+  validityDays: number | null; // "sessions": days once sold; null = forever
+  sessionsPerWeek: number | null; // "monthly": per week; null = no limit
+  priceCents: number;
+  isActive: boolean;
+};
+
+export type BonoTypeInput = Omit<BonoType, "id" | "serviceName" | "servicePriceCents" | "sellable" | "serviceId"> & {
+  serviceId: string;
+};
+
+export const getBonoTypes = async (): Promise<BonoType[]> => {
+  const { bonoTypes } = await stpApi.get(`${CHARGES_PATH}/bono-types`);
+  return bonoTypes;
+};
+
+export const createBonoType = async (body: BonoTypeInput): Promise<BonoType> => {
+  const { bonoType } = await stpApi.post(`${CHARGES_PATH}/bono-types`, body);
+  return bonoType;
+};
+
+export const updateBonoType = async ({ id, ...body }: BonoTypeInput & { id: string }): Promise<BonoType> => {
+  const { bonoType } = await stpApi.put(`${CHARGES_PATH}/bono-types/${id}`, body);
+  return bonoType;
+};
+
+export const deleteBonoType = async (id: string) => {
+  await stpApi.delete(`${CHARGES_PATH}/bono-types/${id}`);
+};
+
+// Bonos sold (Cobros → Bonos). Mirrors back/src/lib/bonos.ts → listBonos
+// - active: usable now · upcoming: starts later · expired · used_up · cancelled
+export type BonoStatus = "active" | "upcoming" | "expired" | "used_up" | "cancelled";
+
+export type Bono = {
+  id: string;
+  bonoTypeId: string | null;
+  name: string;
+  kind: BonoKind;
+  serviceId: string | null;
+  serviceName: string;
+  patientId: string | null; // null: no ficha (then `contact` tells them apart)
+  firstName: string;
+  lastName: string;
+  contact: string | null;
+  totalSessions: number | null; // "sessions"
+  sessionsPerWeek: number | null; // "monthly"; null = no limit
+  usedSessions: number;
+  usedThisWeek: number; // monthly: this week (Monday to Sunday)
+  validFrom: string; // "YYYY-MM-DD"
+  validUntil: string | null; // null: never expires
+  priceCents: number;
+  note: string | null;
+  status: BonoStatus;
+  cancelReason: string | null;
+  // null: pending (can be used anyway)
+  payment: {
+    id: string;
+    method: PaymentMethod;
+    paidAt: string;
+    refundedCents: number;
+    recordedById: string | null;
+  } | null;
+  createdAt: string;
+};
+
+export type PayInput = { method: PaymentMethod; paidOn?: string; note?: string };
+
+export type NewBono = {
+  patient: { patientId: string } | { firstName: string; lastName: string; contact: string };
+  bonoTypeId?: string;
+  custom?: BonoTypeInput;
+  validFrom?: string; // "sessions"
+  month?: string; // "monthly": "YYYY-MM"
+  priceCents?: number;
+  note?: string;
+  pay: PayInput | null; // null: pending
+};
+
+export const getBonos = async (): Promise<Bono[]> => {
+  const { bonos } = await stpApi.get(`${CHARGES_PATH}/bonos`);
+  return bonos;
+};
+
+export const sellBono = async (body: NewBono): Promise<Bono> => {
+  const { bono } = await stpApi.post(`${CHARGES_PATH}/bonos`, body);
+  return bono;
+};
+
+export const payBono = async ({ bonoId, ...body }: PayInput & { bonoId: string }) => {
+  await stpApi.post(`${CHARGES_PATH}/bonos/${bonoId}/pay`, body);
+};
+
+export const cancelBono = async ({
+  bonoId,
+  reason,
+  refund,
+}: {
+  bonoId: string;
+  reason: string;
+  refund?: { amountCents: number; method: PaymentMethod };
+}) => {
+  await stpApi.post(`${CHARGES_PATH}/bonos/${bonoId}/cancel`, { reason, refund });
+};
+
+// Paying a session with a bono (H6)
+export type SessionBonoOption = {
+  bono: Bono;
+  usable: boolean;
+  reason: string | null; // why not
+  overridable: boolean; // only the weekly limit: allowed with a reason
+  // Monthly bonos: the session's week (Monday to Sunday) and its sessions used
+  week: { from: string; to: string; used: number } | null;
+};
+
+export const getSessionBonos = async (sessionId: string): Promise<SessionBonoOption[]> => {
+  const { options } = await stpApi.get(`${CHARGES_PATH}/sessions/${sessionId}/bonos`);
+  return options;
+};
+
+export const useBonoForSession = async ({
+  sessionId,
+  bonoId,
+  overLimitReason,
+}: {
+  sessionId: string;
+  bonoId: string;
+  overLimitReason?: string;
+}) => {
+  await stpApi.put(`${CHARGES_PATH}/sessions/${sessionId}/bono`, { bonoId, overLimitReason });
+};
+
+export const removeSessionBono = async (sessionId: string) => {
+  await stpApi.delete(`${CHARGES_PATH}/sessions/${sessionId}/bono`);
+};
+
+// Movimientos: all the money of a month (same rows as the accountant's CSV)
+export type Movement = {
+  id: string;
+  reference: string;
+  kind: "sessions" | "bono" | "refund";
+  paidAt: string;
+  day: string; // "YYYY-MM-DD"
+  patientId: string | null;
+  payer: string;
+  concept: string;
+  sessions: number | null;
+  professionals: string;
+  method: PaymentMethod;
+  amountCents: number; // negative for refunds
+  refundOfId: string | null;
+  bonoId: string | null;
+  note: string | null;
+  recordedByName: string | null;
+  voided: { at: string; reason: string | null } | null;
+};
+
+export type Movements = {
+  month: string;
+  movements: Movement[];
+  totals: { charged: number; refunded: number; net: number; byMethod: Partial<Record<PaymentMethod, number>> };
+};
+
+export const getMovements = async (month: string, voided: boolean): Promise<Movements> =>
+  stpApi.get(`${CHARGES_PATH}/movements?month=${month}${voided ? "&voided=1" : ""}`);
+
+// A session that happened but isn't in the calendar
+export type NewManualSession = {
+  patient: { patientId: string } | { firstName: string; lastName: string };
+  serviceId: string;
+  physioId?: string | null;
+  date: string; // "YYYY-MM-DD", today or earlier
+  time?: string; // "HH:MM"
+  priceCents?: number; // missing: the service's price
+  note: string; // why it isn't in the calendar
+};
+
+export const createManualSession = async (body: NewManualSession): Promise<ChargeSession> => {
+  const { session } = await stpApi.post(`${CHARGES_PATH}/manual-sessions`, body);
+  return session;
+};
+
+export const cancelManualSession = async ({ sessionId, reason }: { sessionId: string; reason: string }) => {
+  await stpApi.post(`${CHARGES_PATH}/manual-sessions/${sessionId}/cancel`, { reason });
+};
+
 //Public booking page (/reservar/:slug). No login: the patient's side of online
 // booking. Backend: back/src/controllers/publicBooking.controller.ts
 
@@ -990,6 +1403,8 @@ export type PublicBooking = {
   clinic: { name: string; logo: string | null };
   // Individual, active services
   services: { id: string; name: string; durationMinutes: number; priceCents: number }[];
+  // Group classes with upcoming sessions that can be booked (one place each)
+  classes: { id: string; name: string; durationMinutes: number; priceCents: number }[];
   // Only professionals open to online bookings
   professionals: { id: string; name: string; image: string | null }[];
   // The clinic's date today, and the last date that can be booked ("YYYY-MM-DD")
@@ -1036,7 +1451,8 @@ export type PublicBookingConfirmation = {
   token: string;
   clinicName: string;
   serviceName: string;
-  professionalName: string;
+  // null: a class session without a professional assigned yet
+  professionalName: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -1069,6 +1485,50 @@ export const createPublicBooking = async ({
   ...data
 }: NewPublicBooking): Promise<PublicBookingConfirmation> => {
   const { booking } = await stpApi.post(`${publicBookingPath(slug)}/appointments`, data);
+  return booking;
+};
+
+// One upcoming session of a group class
+export type PublicClassSession = {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  professionalName: string | null;
+  // 0: full
+  placesLeft: number;
+};
+
+// GET /classes?serviceId= -> the class's upcoming sessions
+export const getPublicClassSessions = async ({
+  slug,
+  serviceId,
+}: {
+  slug: string;
+  serviceId: string;
+}): Promise<PublicClassSession[]> => {
+  const { sessions } = await stpApi.get(`${publicBookingPath(slug)}/classes`, {
+    params: { serviceId },
+  });
+  return sessions;
+};
+
+export type NewPublicClassBooking = Omit<
+  NewPublicBooking,
+  "serviceId" | "date" | "time" | "professionalId" | "notes"
+> & { sessionId: string };
+
+// POST /classes/:sessionId -> 201 { booking }. 409 CLASS_FULL / ALREADY_BOOKED /
+// CLASS_UNAVAILABLE
+export const bookPublicClass = async ({
+  slug,
+  sessionId,
+  ...data
+}: NewPublicClassBooking): Promise<PublicBookingConfirmation> => {
+  const { booking } = await stpApi.post(
+    `${publicBookingPath(slug)}/classes/${encodeURIComponent(sessionId)}`,
+    data,
+  );
   return booking;
 };
 
@@ -1238,7 +1698,15 @@ export type CalendarRoom = Pick<Room, "id" | "name" | "capacity" | "roomTypeId" 
 
 export type CalendarService = Pick<
   Service,
-  "id" | "name" | "durationMinutes" | "bufferMinutes" | "roomTypeId" | "isGroup" | "maxPatients" | "color"
+  | "id"
+  | "name"
+  | "durationMinutes"
+  | "bufferMinutes"
+  | "roomTypeId"
+  | "isGroup"
+  | "maxPatients"
+  | "color"
+  | "priceCents"
 >;
 
 // Members who can attend appointments (owners, admins and physios)
@@ -1581,6 +2049,28 @@ export type AppointmentPatient = {
   contactEmail: string | null;
   attendance: "pending" | "attended" | "no_show";
   reminder: ReminderState;
+  // Online booking not linked to a ficha: one with the same email that may be
+  // this patient (the name didn't match, or there were several)
+  suggestedPatient: { id: string; name: string } | null;
+};
+
+// Links a patient without ficha of an appointment to a ficha (same row).
+// dismiss: the suggested ficha isn't them
+export const linkAppointmentPatient = async ({
+  appointmentId,
+  rowId,
+  patientId,
+  dismiss,
+}: {
+  appointmentId: string;
+  rowId: string;
+  patientId?: string;
+  dismiss?: boolean;
+}) => {
+  await stpApi.post(`/api/clinic/calendar/appointments/${appointmentId}/patients/${rowId}/link`, {
+    patientId,
+    dismiss,
+  });
 };
 
 export type Appointment = {
@@ -1597,9 +2087,14 @@ export type Appointment = {
   source: "staff" | "online";
   contactPhone: string | null;
   contactEmail: string | null;
+  // Part of a weekly series (null: a single appointment). detached: changed by
+  // hand, it no longer follows the series
+  seriesId: string | null;
+  detached: boolean;
   service: { id: string; name: string; color: string; isGroup: boolean; maxPatients: number };
   room: { id: string; name: string };
-  physio: { userId: string; name: string };
+  // null: a class session without a physio yet (assign one later)
+  physio: { userId: string; name: string } | null;
   patients: AppointmentPatient[];
   // Why it no longer fits after a change in the clinic (hours, holiday, room,
   // service, team). Empty when fine. Only future, active appointments
@@ -1642,6 +2137,145 @@ export const getAppointments = async (range: { from: string; to: string }): Prom
 
 // POST -> 201 { appointment }. 400/409 with a clear message if a rule fails
 // (closed, room full, physio busy…)
+// Taking attendance in a group session (pasar lista), patient by patient
+export const setAttendance = async ({
+  appointmentId,
+  rows,
+}: {
+  appointmentId: string;
+  rows: { rowId: string; attendance: "pending" | "attended" | "no_show" }[];
+}) => {
+  await stpApi.patch(`/api/clinic/calendar/appointments/${appointmentId}/attendance`, { rows });
+};
+
+// Group classes (R3)
+export type ClassMember = {
+  id: string;
+  patientId: string | null;
+  firstName: string;
+  lastName: string;
+  contactEmail: string | null;
+  fromDate: string;
+  toDate: string | null; // left the class: last day
+};
+
+export type GroupClass = {
+  id: string;
+  service: { id: string; name: string; color: string };
+  room: { id: string; name: string };
+  physio: { userId: string; name: string } | null; // null: no physio yet
+  weekdays: number[];
+  startTime: string;
+  startsOn: string;
+  endsOn: string;
+  places: number;
+  members: ClassMember[]; // still enrolled
+  upcomingSessions: number;
+  sessionsWithoutPhysio: number;
+  nextSession: string | null;
+  lastSession: string | null;
+};
+
+export type ClassInput = {
+  serviceId: string;
+  roomId: string;
+  physioId: string | null;
+  startTime: string;
+  weekdays: number[];
+  startsOn: string;
+  endsOn: string;
+  members?: AppointmentPatientInput[];
+};
+
+export const getClasses = async (): Promise<GroupClass[]> => {
+  const { classes } = await stpApi.get("/api/clinic/calendar/classes");
+  return classes;
+};
+
+export const previewClass = async (body: ClassInput): Promise<SeriesDay[]> => {
+  const { days } = await stpApi.post("/api/clinic/calendar/classes/preview", body);
+  return days;
+};
+
+export const createClass = async (
+  body: ClassInput,
+): Promise<{ classId: string; created: string[]; skipped: { date: string; message: string }[] }> =>
+  stpApi.post("/api/clinic/calendar/classes", body);
+
+export const addClassMember = async ({
+  classId,
+  patient,
+  fromDate,
+}: {
+  classId: string;
+  patient: AppointmentPatientInput;
+  fromDate?: string;
+}): Promise<{ memberId: string; added: string[]; full: string[] }> =>
+  stpApi.post(`/api/clinic/calendar/classes/${classId}/members`, { patient, fromDate });
+
+export const removeClassMember = async ({
+  classId,
+  memberId,
+  fromDate,
+}: {
+  classId: string;
+  memberId: string;
+  fromDate?: string;
+}): Promise<{ removed: string[] }> =>
+  stpApi.post(`/api/clinic/calendar/classes/${classId}/members/${memberId}/leave`, { fromDate });
+
+export const extendClass = async ({
+  classId,
+  endsOn,
+}: {
+  classId: string;
+  endsOn: string;
+}): Promise<{ created: string[]; skipped: { date: string; message: string }[] }> =>
+  stpApi.post(`/api/clinic/calendar/classes/${classId}/extend`, { endsOn });
+
+// Weekly series (R1–R2)
+export type SeriesInput = Omit<NewAppointment, "date" | "status" | "notes"> & {
+  weekdays: number[]; // 1 = Monday … 7 = Sunday
+  startsOn: string;
+  endsOn: string;
+  status?: "booked" | "confirmed";
+  notes?: string | null;
+};
+
+export type SeriesDay = { date: string; ok: boolean; code: string | null; message: string | null };
+
+export const previewSeries = async (body: SeriesInput): Promise<SeriesDay[]> => {
+  const { days } = await stpApi.post("/api/clinic/calendar/series/preview", body);
+  return days;
+};
+
+export const createSeries = async (
+  body: SeriesInput,
+): Promise<{ seriesId: string; created: string[]; skipped: { date: string; message: string }[] }> =>
+  stpApi.post("/api/clinic/calendar/series", body);
+
+export type SeriesChanges =
+  | {
+      startTime?: string;
+      physioId?: string;
+      roomId?: string;
+      patients?: AppointmentPatientInput[];
+      notes?: string | null;
+    }
+  | { cancel: { reason: string } };
+
+// "following": this appointment and the next ones · "all": every future one
+export const updateSeries = async ({
+  seriesId,
+  ...body
+}: {
+  seriesId: string;
+  scope: "following" | "all";
+  fromAppointmentId?: string;
+  changes: SeriesChanges;
+}): Promise<{ updated: string[]; skipped: { date: string; message: string }[] }> =>
+  stpApi.post(`/api/clinic/calendar/series/${seriesId}/update`, body);
+
 export const createAppointment = async (data: NewAppointment): Promise<Appointment> => {
   const { appointment } = await stpApi.post(APPOINTMENTS_PATH, data);
   return appointment;

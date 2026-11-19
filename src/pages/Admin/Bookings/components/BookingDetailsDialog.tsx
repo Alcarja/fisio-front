@@ -9,6 +9,7 @@ import {
   Loader2,
   NotebookPen,
   Pencil,
+  Repeat,
   RotateCcw,
   Stethoscope,
   Trash2,
@@ -19,7 +20,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Appointment, CalendarConfig } from "@/adapters/api";
-import { useDeleteAppointment, useUpdateAppointment } from "@/adapters/hook";
+import { useDeleteAppointment, useUpdateAppointment, useUpdateSeries } from "@/adapters/hook";
+import type { SeriesChanges } from "@/adapters/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ import { formatMinutes } from "../../Settings/Services/serviceFormat";
 import AppointmentForm, { type AppointmentFormValues } from "./AppointmentForm";
 import GroupParticipants from "./GroupParticipants";
 import PatientNameLink from "./PatientNameLink";
+import SuggestedFichas from "./SuggestedFichas";
 
 type Props = {
   appointment: Appointment;
@@ -75,7 +78,12 @@ export default function BookingDetailsDialog({
   lockedPhysioId,
   onClose,
 }: Props) {
-  const [mode, setMode] = useState<"view" | "edit" | "cancel">("view");
+  const [mode, setMode] = useState<"view" | "edit" | "cancel" | "scope">("view");
+  // Series: which appointments a change or cancellation applies to
+  const [scope, setScope] = useState<Scope>("this");
+  const [pendingEdit, setPendingEdit] = useState<AppointmentFormValues | null>(null);
+  const updateSeries = useUpdateSeries();
+  const inSeries = !!appointment.seriesId && !appointment.detached && appointment.status !== "cancelled";
   const [reason, setReason] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const update = useUpdateAppointment();
@@ -104,7 +112,44 @@ export default function BookingDetailsDialog({
       },
     );
 
-  const saveEdit = (values: AppointmentFormValues) =>
+  // Applies a change to the following or all appointments of the series
+  const saveSeries = (changes: SeriesChanges, success: string) =>
+    updateSeries.mutate(
+      {
+        seriesId: appointment.seriesId!,
+        scope: scope === "all" ? "all" : "following",
+        fromAppointmentId: appointment.id,
+        changes,
+      },
+      {
+        onSuccess: ({ updated, skipped }) => {
+          toast.success(`${success}: ${updated.length} ${updated.length === 1 ? "cita" : "citas"}`, {
+            description: skipped.length
+              ? `No se pudieron cambiar ${skipped.length}: ${skipped.map((x) => `${x.date.split("-").reverse().slice(0, 2).join("/")} (${x.message})`).join(", ")}`
+              : undefined,
+          });
+          setMode("view");
+          setReason("");
+          setPendingEdit(null);
+          if (changes && "cancel" in changes) onClose();
+        },
+        onError: (error) => toast.error("No se pudo cambiar la serie", { description: error.message }),
+      },
+    );
+
+  // Editing an appointment of a series: if only what a series can share
+  // changed (time, physio, room, patients, notes), ask which ones
+  const saveEdit = (values: AppointmentFormValues) => {
+    if (inSeries && values.date === appointment.date && values.serviceId === service.id && values.status === status) {
+      setPendingEdit(values);
+      setScope("this");
+      setMode("scope");
+      return;
+    }
+    saveOne(values);
+  };
+
+  const saveOne = (values: AppointmentFormValues) =>
     save(
       {
         serviceId: values.serviceId,
@@ -118,6 +163,21 @@ export default function BookingDetailsDialog({
       },
       "Cita actualizada",
     );
+
+  const applyEdit = () => {
+    if (!pendingEdit) return;
+    if (scope === "this") return saveOne(pendingEdit);
+    saveSeries(
+      {
+        startTime: pendingEdit.startTime,
+        physioId: pendingEdit.physioId,
+        roomId: pendingEdit.roomId,
+        patients: pendingEdit.patients,
+        notes: pendingEdit.notes || null,
+      },
+      "Serie actualizada",
+    );
+  };
 
   const deleteIt = () =>
     remove.mutate(appointment.id, {
@@ -165,7 +225,7 @@ export default function BookingDetailsDialog({
                 serviceId: service.id,
                 date: appointment.date,
                 startTime: appointment.startTime,
-                physioId: appointment.physio.userId,
+                physioId: appointment.physio?.userId ?? "",
                 roomId: appointment.room.id,
                 patients: appointment.patients.map(toPatientInput),
                 status: status === "cancelled" ? "booked" : status,
@@ -180,12 +240,42 @@ export default function BookingDetailsDialog({
             />
           )}
 
+          {mode === "scope" && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm">Esta cita se repite cada semana. ¿A qué citas aplicas los cambios?</p>
+              <ScopePicker value={scope} onChange={setScope} verb="Cambiar" />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  disabled={update.isPending || updateSeries.isPending}
+                  onClick={() => setMode("edit")}
+                >
+                  Volver
+                </Button>
+                <Button
+                  type="button"
+                  className="rounded-full"
+                  disabled={update.isPending || updateSeries.isPending}
+                  onClick={applyEdit}
+                >
+                  {(update.isPending || updateSeries.isPending) && <Loader2 className="animate-spin" />}
+                  Guardar cambios
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
           {mode === "cancel" && (
             <form
               className="flex flex-col gap-4"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (reason.trim()) {
+                if (!reason.trim()) return;
+                if (inSeries && scope !== "this") {
+                  saveSeries({ cancel: { reason: reason.trim() } }, "Citas canceladas");
+                } else {
                   save({ status: "cancelled", cancellationReason: reason.trim() }, "Cita cancelada");
                 }
               }}
@@ -204,6 +294,7 @@ export default function BookingDetailsDialog({
                   La cita queda en el historial y su hueco se libera.
                 </p>
               </div>
+              {inSeries && <ScopePicker value={scope} onChange={setScope} verb="Cancelar" />}
               <DialogFooter>
                 <Button
                   type="button"
@@ -218,10 +309,10 @@ export default function BookingDetailsDialog({
                   type="submit"
                   variant="destructive"
                   className="rounded-full"
-                  disabled={!reason.trim() || update.isPending}
+                  disabled={!reason.trim() || update.isPending || updateSeries.isPending}
                 >
-                  {update.isPending && <Loader2 className="animate-spin" />}
-                  Cancelar cita
+                  {(update.isPending || updateSeries.isPending) && <Loader2 className="animate-spin" />}
+                  {inSeries && scope !== "this" ? "Cancelar citas" : "Cancelar cita"}
                 </Button>
               </DialogFooter>
             </form>
@@ -244,7 +335,9 @@ export default function BookingDetailsDialog({
                       ))}
                     </ul>
                     <span className="text-xs text-muted-foreground">
-                      Cambia la hora o la sala, o cancela la cita y avisa al paciente.
+                      {appointment.issues.every((i) => i.code === "NO_PHYSIO")
+                        ? "Asígnalo en Clases (a toda la clase) o editando esta sesión."
+                        : "Cambia la hora o la sala, o cancela la cita y avisa al paciente."}
                     </span>
                   </div>
                 </div>
@@ -257,6 +350,11 @@ export default function BookingDetailsDialog({
                 <Detail icon={<Clock />} label="Hora">
                   {range} ({formatMinutes(appointment.durationMinutes)})
                 </Detail>
+                {appointment.seriesId && (
+                  <Detail icon={<Repeat />} label="Se repite">
+                    {appointment.detached ? "Cambiada a mano: ya no sigue la serie" : "Cada semana"}
+                  </Detail>
+                )}
                 <Detail
                   icon={service.isGroup ? <Users /> : <User />}
                   label={
@@ -281,6 +379,7 @@ export default function BookingDetailsDialog({
                     </ul>
                   )}
                 </Detail>
+                <SuggestedFichas appointment={appointment} canEdit={canEdit && status !== "cancelled"} />
                 {appointment.patients.some((p) => p.reminder) && (
                   <Detail
                     icon={missesReminder(appointment) ? <BellOff /> : <Bell />}
@@ -317,7 +416,7 @@ export default function BookingDetailsDialog({
                   </Detail>
                 )}
                 <Detail icon={<Stethoscope />} label="Fisio">
-                  {appointment.physio.name}
+                  {appointment.physio?.name ?? "Sin fisio asignado: edita la sesión o la clase para asignarlo"}
                 </Detail>
                 <Detail icon={<DoorOpen />} label="Sala">
                   {appointment.room.name}
@@ -356,7 +455,7 @@ export default function BookingDetailsDialog({
 
               {!canEdit && (
                 <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-                  Esta cita es de otro fisio: puedes verla, pero solo {appointment.physio.name},
+                  Esta cita es de otro fisio: puedes verla, pero solo {appointment.physio?.name ?? "su fisio"},
                   recepción o un administrador pueden modificarla.
                 </p>
               )}
@@ -435,6 +534,38 @@ function Detail({ icon, label, children }: { icon: ReactNode; label: string; chi
       <span className="mt-0.5 text-muted-foreground [&_svg]:size-4">{icon}</span>
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="min-w-0">{children}</dd>
+    </div>
+  );
+}
+
+type Scope = "this" | "following" | "all";
+
+// Which appointments of a weekly series a change applies to. Only future ones
+// that weren't changed by hand are touched
+function ScopePicker({ value, onChange, verb }: { value: Scope; onChange: (s: Scope) => void; verb: string }) {
+  const options: [Scope, string, string][] = [
+    ["this", `${verb} solo esta`, "Las demás citas de la serie no cambian"],
+    ["following", "Esta y las siguientes", "Desde esta cita en adelante"],
+    ["all", "Todas", "Todas las citas futuras de la serie"],
+  ];
+  return (
+    <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="A qué citas">
+      {options.map(([key, label, hint]) => (
+        <button
+          key={key}
+          type="button"
+          role="radio"
+          aria-checked={value === key}
+          onClick={() => onChange(key)}
+          className={
+            "flex flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors " +
+            (value === key ? "border-primary bg-primary/5" : "hover:bg-muted")
+          }
+        >
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs text-muted-foreground">{hint}</span>
+        </button>
+      ))}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useAppointments, useCalendarConfig, useMe } from "@/adapters/hook";
 import MemberAvatar from "@/components/MemberAvatar";
 import { cn } from "@/lib/utils";
 import BreakdownCard from "./components/BreakdownCard";
+import ChargesArchiveCard from "./components/ChargesArchiveCard";
 import MonthPicker from "./components/MonthPicker";
 import PhysioServiceTable from "./components/PhysioServiceTable";
 import StatTiles from "./components/StatTiles";
@@ -124,6 +125,8 @@ export default function ReportsPage() {
 
         <PhysioServiceTable month={month} />
       </div>
+
+      <ChargesArchiveCard />
     </div>
   );
 }

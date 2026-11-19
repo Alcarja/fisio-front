@@ -8,6 +8,8 @@ import RequireActiveClinic from "./RequireActiveClinic";
 import SelectClinicPage from "@/pages/SelectClinic/SelectClinicPage";
 import {
   bookingsAccess,
+  chargesAccess,
+  chargesManagerAccess,
   clinicalAccess,
   onlineBookingAccess,
   panelAccess,
@@ -29,6 +31,9 @@ import RoomsPage from "@/pages/Admin/Settings/Rooms/RoomsPage";
 import ServicesPage from "@/pages/Admin/Settings/Services/ServicesPage";
 import OnlineBookingPage from "@/pages/Admin/Settings/OnlineBooking/OnlineBookingPage";
 import RemindersPage from "@/pages/Admin/Settings/Reminders/RemindersPage";
+import ChargesSettingsPage from "@/pages/Admin/Settings/Charges/ChargesSettingsPage";
+import ChargesPage from "@/pages/Admin/Charges/ChargesPage";
+import ClassesPage from "@/pages/Admin/Classes/ClassesPage";
 import ClinicsPage from "@/pages/Admin/Clinics/ClinicsPage";
 import BillingPage from "@/pages/Admin/Billing/BillingPage";
 import RequestsPage from "@/pages/Admin/Requests/RequestsPage";
@@ -164,6 +169,14 @@ export const router = createBrowserRouter([
                   </RequireRole>
                 ),
               },
+              {
+                path: paths.adminSettingsCharges,
+                element: (
+                  <RequireRole access={chargesManagerAccess} redirectTo={paths.adminSettings}>
+                    <ChargesSettingsPage />
+                  </RequireRole>
+                ),
+              },
             ],
           },
         ],
@@ -175,7 +188,10 @@ export const router = createBrowserRouter([
             <Outlet />
           </RequireRole>
         ),
-        children: [{ path: paths.adminBookings, element: <BookingsPage /> }],
+        children: [
+          { path: paths.adminBookings, element: <BookingsPage /> },
+          { path: paths.adminClasses, element: <ClassesPage /> },
+        ],
       },
       // Pacientes: every role of the active clinic, if the clinic has the
       // feature switched on. Everyone else back to /admin
@@ -189,6 +205,16 @@ export const router = createBrowserRouter([
           { path: paths.adminPatients, element: <PatientsPage /> },
           { path: paths.adminPatient, element: <PatientDetailsPage /> },
         ],
+      },
+      // Cobros y bonos: owners, admins and reception, if the clinic has the
+      // feature switched on. Everyone else back to /admin
+      {
+        element: (
+          <RequireRole access={chargesAccess} redirectTo={paths.admin}>
+            <Outlet />
+          </RequireRole>
+        ),
+        children: [{ path: paths.adminCharges, element: <ChargesPage /> }],
       },
       // Ejercicios: owners, admins and physios, in clinics with Pacientes
       {

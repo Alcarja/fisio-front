@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { generatePath, Link, useParams } from "react-router";
 import { CalendarCheck, CalendarX, CircleAlert, Loader2 } from "lucide-react";
-import { useCreatePublicBooking, usePublicBooking } from "@/adapters/hook";
+import type { PublicClassSession } from "@/adapters/api";
+import { useBookPublicClass, useCreatePublicBooking, usePublicBooking } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { paths } from "@/routes/paths";
 import { cancellationNote, formatDuration, formatLongDate, formatPrice } from "./bookingFormat";
 import Choice from "./components/Choice";
+import ClassSessionPicker from "./components/ClassSessionPicker";
 import Message from "./components/Message";
 import SlotPicker from "./components/SlotPicker";
 import Step from "./components/Step";
@@ -32,11 +34,15 @@ const emptyForm = {
 export default function PublicBookingPage() {
   const { slug } = useParams();
   const { data: booking, isPending, error } = usePublicBooking(slug);
-  const create = useCreatePublicBooking();
+  const createAppointment = useCreatePublicBooking();
+  const bookClass = useBookPublicClass();
   // Inside a clinic's website (?embed=1): see useEmbed
   const embed = useEmbed();
 
   const [serviceId, setServiceId] = useState<string | null>(null);
+  // A group class picks a session instead of a professional, day and time
+  const [isClass, setIsClass] = useState(false);
+  const [classSession, setClassSession] = useState<PublicClassSession | null>(null);
   // null: anyone available
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [weekStart, setWeekStart] = useState<string | null>(null);
@@ -46,6 +52,9 @@ export default function PublicBookingPage() {
   const [consent, setConsent] = useState(false);
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // The booking being made: an appointment or a place in a class
+  const create = isClass ? bookClass : createAppointment;
 
   if (isPending) {
     return (
@@ -75,7 +84,7 @@ export default function PublicBookingPage() {
       <Message
         embed={embed}
         icon={<CalendarCheck className="size-5 text-primary" />}
-        title="¡Cita reservada!"
+        title={isClass ? "¡Plaza reservada!" : "¡Cita reservada!"}
       >
         <span className="flex flex-col gap-4">
           <span>
@@ -86,7 +95,7 @@ export default function PublicBookingPage() {
               {formatLongDate(done.date)}, {done.startTime}–{done.endTime}
             </span>
             <span>{done.serviceName}</span>
-            <span>Con {done.professionalName}</span>
+            {done.professionalName && <span>Con {done.professionalName}</span>}
           </span>
           <span className="text-sm">
             Te hemos enviado los detalles a{" "}
@@ -97,7 +106,10 @@ export default function PublicBookingPage() {
             {/* Embedded: the appointment page opens in its own tab, full
                 size, out of the clinic's site */}
             <Link
-              to={generatePath(paths.publicBookingManage, { slug, token: done.token })}
+              to={generatePath(paths.publicBookingManage, {
+                slug,
+                token: done.token,
+              })}
               {...(embed && { target: "_blank", rel: "noopener" })}
             >
               Ver mi cita
@@ -108,35 +120,66 @@ export default function PublicBookingPage() {
     );
   }
 
-  const service = booking.services.find((s) => s.id === serviceId);
-  // With one professional there's nothing to choose
-  const choosesProfessional = booking.professionals.length > 1;
-  const canBook = booking.services.length > 0 && booking.professionals.length > 0;
+  const service = (isClass ? booking.classes : booking.services).find((s) => s.id === serviceId);
+  // With one professional there's nothing to choose. Classes never choose
+  const choosesProfessional = !isClass && booking.professionals.length > 1;
+  const individualServices = booking.professionals.length > 0 ? booking.services : [];
+  const canBook = individualServices.length > 0 || booking.classes.length > 0;
+  // What's been picked, ready for "Tus datos"
+  const picked = isClass
+    ? classSession && { date: classSession.date, time: classSession.startTime }
+    : date && time && { date, time };
 
   // Changing what's being booked changes the free times: choose them again
   const resetSlot = () => {
     setDate(null);
     setTime(null);
-    create.reset();
+    setClassSession(null);
+    createAppointment.reset();
+    bookClass.reset();
+  };
+
+  const selectService = (id: string, asClass: boolean) => {
+    setServiceId(id);
+    setIsClass(asClass);
+    setWeekStart(booking.today);
+    resetSlot();
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const person = {
+      slug,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      consent,
+      website: form.website || undefined,
+    };
+    if (isClass) {
+      if (!classSession) return;
+      bookClass.mutate(
+        { ...person, sessionId: classSession.id },
+        {
+          // Full or gone meanwhile: the sessions reload, choose another
+          onError: (error) => {
+            const code = (error as { code?: string }).code;
+            if (code === "CLASS_FULL" || code === "CLASS_UNAVAILABLE") setClassSession(null);
+          },
+        },
+      );
+      return;
+    }
     if (!serviceId || !date || !time) return;
-    create.mutate(
+    createAppointment.mutate(
       {
-        slug,
+        ...person,
         serviceId,
         date,
         time,
         professionalId,
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
         notes: form.notes.trim() || undefined,
-        consent,
-        website: form.website || undefined,
       },
       {
         // The time was taken meanwhile: the free times reload, choose another.
@@ -181,15 +224,11 @@ export default function PublicBookingPage() {
         <>
           <Step number={1} title="¿Qué necesitas?">
             <div className="flex flex-col gap-2">
-              {booking.services.map((s) => (
+              {individualServices.map((s) => (
                 <Choice
                   key={s.id}
-                  selected={serviceId === s.id}
-                  onSelect={() => {
-                    setServiceId(s.id);
-                    setWeekStart(booking.today);
-                    resetSlot();
-                  }}
+                  selected={!isClass && serviceId === s.id}
+                  onSelect={() => selectService(s.id, false)}
                   className="flex items-center justify-between gap-3"
                 >
                   <span className="flex min-w-0 flex-col">
@@ -201,8 +240,58 @@ export default function PublicBookingPage() {
                   )}
                 </Choice>
               ))}
+              {booking.classes.length > 0 && (
+                <>
+                  {individualServices.length > 0 && (
+                    <span className="mt-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      Clases en grupo
+                    </span>
+                  )}
+                  {booking.classes.map((c) => (
+                    <Choice
+                      key={c.id}
+                      selected={isClass && serviceId === c.id}
+                      onSelect={() => selectService(c.id, true)}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium">{c.name}</span>
+                        <span className="text-xs opacity-70">
+                          Clase · {formatDuration(c.durationMinutes)}
+                        </span>
+                      </span>
+                      {c.priceCents > 0 && (
+                        <span className="shrink-0 tabular-nums">{formatPrice(c.priceCents)}</span>
+                      )}
+                    </Choice>
+                  ))}
+                </>
+              )}
             </div>
           </Step>
+
+          {isClass && service && (
+            <Step number={2} title="¿Qué día?">
+              <ClassSessionPicker
+                slug={slug}
+                serviceId={service.id}
+                sessionId={classSession?.id ?? null}
+                onSelect={(session) => {
+                  setClassSession(session);
+                  bookClass.reset();
+                }}
+              />
+              {bookClass.isError && !classSession && (
+                <p
+                  role="alert"
+                  className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                >
+                  <CircleAlert className="mt-0.5 size-4 shrink-0" />
+                  {bookClass.error.message}
+                </p>
+              )}
+            </Step>
+          )}
 
           {choosesProfessional && service && (
             <Step number={2} title="¿Con quién?">
@@ -232,7 +321,7 @@ export default function PublicBookingPage() {
             </Step>
           )}
 
-          {service && weekStart && (
+          {!isClass && service && weekStart && (
             <Step number={choosesProfessional ? 3 : 2} title="¿Cuándo?">
               <SlotPicker
                 slug={slug}
@@ -247,22 +336,22 @@ export default function PublicBookingPage() {
                 onSelect={(d, t) => {
                   setDate(d);
                   setTime(t);
-                  create.reset();
+                  createAppointment.reset();
                 }}
               />
-              {create.isError && !time && (
+              {createAppointment.isError && !time && (
                 <p
                   role="alert"
                   className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
                 >
                   <CircleAlert className="mt-0.5 size-4 shrink-0" />
-                  {create.error.message}
+                  {createAppointment.error.message}
                 </p>
               )}
             </Step>
           )}
 
-          {service && date && time && (
+          {service && picked && (
             <Step number={choosesProfessional ? 4 : 3} title="Tus datos">
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -318,19 +407,24 @@ export default function PublicBookingPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="booking-notes">
-                    Comentario <span className="font-normal text-muted-foreground">(opcional)</span>
-                  </Label>
-                  <Textarea
-                    id="booking-notes"
-                    rows={3}
-                    maxLength={MAX_NOTES}
-                    placeholder="Algo que la clínica deba saber antes de tu cita."
-                    value={form.notes}
-                    onChange={(e) => set("notes")(e.target.value)}
-                  />
-                </div>
+                {/* A class place carries no comment: it's the same session for
+                    everyone */}
+                {!isClass && (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="booking-notes">
+                      Comentario{" "}
+                      <span className="font-normal text-muted-foreground">(opcional)</span>
+                    </Label>
+                    <Textarea
+                      id="booking-notes"
+                      rows={3}
+                      maxLength={MAX_NOTES}
+                      placeholder="Algo que la clínica deba saber antes de tu cita."
+                      value={form.notes}
+                      onChange={(e) => set("notes")(e.target.value)}
+                    />
+                  </div>
+                )}
 
                 {/* Trap for bots: people never see or reach this field */}
                 <div className="hidden" aria-hidden>
@@ -367,7 +461,7 @@ export default function PublicBookingPage() {
                 <div className="flex flex-col gap-3 border-t pt-4">
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">{service.name}</span> ·{" "}
-                    {formatLongDate(date)} a las {time}
+                    {formatLongDate(picked.date)} a las {picked.time}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {cancellationNote(booking.cancellation)}

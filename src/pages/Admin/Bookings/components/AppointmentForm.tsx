@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type ReactNode, type FormEvent } from "react";
 import { Link } from "react-router";
 import { Loader2, Plus, X } from "lucide-react";
 import type { AppointmentPatientInput, AppointmentStatus, CalendarConfig } from "@/adapters/api";
@@ -34,6 +34,9 @@ type Props = {
   lockedPhysioId?: string;
   onSubmit: (values: AppointmentFormValues) => void;
   onCancel: () => void;
+  // Extra fields before the buttons (e.g. "Repetir cada semana"), which see the
+  // form's current values
+  extra?: (values: AppointmentFormValues) => ReactNode;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // same as the backend
@@ -51,6 +54,7 @@ export default function AppointmentForm({
   lockedPhysioId,
   onSubmit,
   onCancel,
+  extra,
 }: Props) {
   const [values, setValues] = useState<AppointmentFormValues>(() => ({
     ...initial,
@@ -126,8 +130,10 @@ export default function AppointmentForm({
     }))
     .filter((p) => p.firstName || p.lastName);
   const fichaIds = patients.flatMap((p) => (p.patientId ? [p.patientId] : []));
+  // Group sessions can be created empty (people join later); individual ones
+  // need their patient
   const patientsOk =
-    patients.length > 0 &&
+    (patients.length > 0 || !!service?.isGroup) &&
     patients.length <= maxPatients &&
     patients.every((p) => p.firstName && p.lastName && (!p.email || EMAIL_PATTERN.test(p.email)));
   const valid =
@@ -243,7 +249,7 @@ export default function AppointmentForm({
 
       <div className="flex flex-col gap-2">
         <Label>
-          {maxPatients > 1 ? `Pacientes (máximo ${maxPatients})` : "Paciente"}
+          {maxPatients > 1 ? `Participantes (opcional, máximo ${maxPatients})` : "Paciente"}
         </Label>
         {values.patients.map((p, index) => (
           <PatientFields
@@ -323,6 +329,8 @@ export default function AppointmentForm({
           />
         </div>
       </div>
+
+      {extra?.(values)}
 
       <DialogFooter>
         <Button

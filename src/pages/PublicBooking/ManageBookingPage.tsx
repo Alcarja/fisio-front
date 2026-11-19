@@ -61,7 +61,7 @@ export default function ManageBookingPage() {
         {formatLongDate(booking.date)}, {booking.startTime}–{booking.endTime}
       </span>
       <span>{booking.serviceName}</span>
-      <span>Con {booking.professionalName}</span>
+      {booking.professionalName && <span>Con {booking.professionalName}</span>}
     </div>
   );
   const bookAgain = (

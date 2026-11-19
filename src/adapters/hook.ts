@@ -483,6 +483,132 @@ const useRemindersMutation = <TVariables,>(mutationFn: (variables: TVariables) =
 export const useSetRemindersEnabled = () => useRemindersMutation(api.setRemindersEnabled);
 export const useUpdateReminderSettings = () => useRemindersMutation(api.updateReminderSettings);
 
+//Cobros y bonos (owners, admins and reception of the active clinic)
+export const useChargeSettings = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["charges", "settings", activeClinicId],
+    queryFn: api.getChargeSettings,
+    enabled: !!activeClinicId,
+  });
+};
+
+export const useChargeSessions = (
+  activeClinicId: string | undefined,
+  range: { from: string; to: string },
+) => {
+  return useQuery({
+    queryKey: ["charges", "sessions", activeClinicId, range.from, range.to],
+    queryFn: () => api.getChargeSessions(range),
+    enabled: !!activeClinicId,
+    // Keep the previous month on screen while the next one loads
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const usePendingSessions = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["charges", "pending", activeClinicId],
+    queryFn: api.getPendingSessions,
+    enabled: !!activeClinicId,
+  });
+};
+
+// Months with payments, for exporting them once Cobros is switched off
+export const useChargesArchive = (activeClinicId: string | undefined, enabled: boolean) => {
+  return useQuery({
+    queryKey: ["charges", "archive", activeClinicId],
+    queryFn: api.getChargesArchive,
+    enabled: !!activeClinicId && enabled,
+  });
+};
+
+export const useBonoTypes = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["charges", "bonoTypes", activeClinicId],
+    queryFn: api.getBonoTypes,
+    enabled: !!activeClinicId,
+  });
+};
+
+export const useCreateBonoType = () => useChargesMutation(api.createBonoType);
+export const useUpdateBonoType = () => useChargesMutation(api.updateBonoType);
+export const useDeleteBonoType = () => useChargesMutation(api.deleteBonoType);
+
+export const useBonos = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["charges", "bonos", activeClinicId],
+    queryFn: api.getBonos,
+    enabled: !!activeClinicId,
+  });
+};
+
+export const useSellBono = () => useChargesMutation(api.sellBono);
+export const usePayBono = () => useChargesMutation(api.payBono);
+export const useCancelBono = () => useChargesMutation(api.cancelBono);
+
+export const useSessionBonos = (sessionId: string | null) => {
+  return useQuery({
+    queryKey: ["charges", "sessionBonos", sessionId],
+    queryFn: () => api.getSessionBonos(sessionId!),
+    enabled: !!sessionId,
+  });
+};
+
+export const useUseBono = () => useChargesMutation(api.useBonoForSession);
+export const useRemoveSessionBono = () => useChargesMutation(api.removeSessionBono);
+
+export const useMovements = (activeClinicId: string | undefined, month: string, voided: boolean) => {
+  return useQuery({
+    queryKey: ["charges", "movements", activeClinicId, month, voided],
+    queryFn: () => api.getMovements(month, voided),
+    enabled: !!activeClinicId,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const usePayment = (paymentId: string | null) => {
+  return useQuery({
+    queryKey: ["charges", "payment", paymentId],
+    queryFn: () => api.getPayment(paymentId!),
+    enabled: !!paymentId,
+  });
+};
+
+// Every change reloads all of Cobros, and the calendar too: charging a
+// session nobody had confirmed marks it as done
+const useChargesMutation = <TVariables, TResult>(
+  mutationFn: (variables: TVariables) => Promise<TResult>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["charges"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+  });
+};
+
+export const useCreatePayment = () => useChargesMutation(api.createPayment);
+export const useVoidPayment = () => useChargesMutation(api.voidPayment);
+export const useRefundPayment = () => useChargesMutation(api.refundPayment);
+export const useMovePayment = () => useChargesMutation(api.movePayment);
+export const useSetSessionPrice = () => useChargesMutation(api.setSessionPrice);
+export const useWaiveSession = () => useChargesMutation(api.waiveSession);
+export const useUnwaiveSession = () => useChargesMutation(api.unwaiveSession);
+export const useMarkSessionOutcome = () => useChargesMutation(api.markSessionOutcome);
+export const useCreateManualSession = () => useChargesMutation(api.createManualSession);
+export const useCancelManualSession = () => useChargesMutation(api.cancelManualSession);
+
+export const useUpdateChargeSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateChargeSettings,
+    // Everything under "charges" depends on the start date
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["charges"] }),
+  });
+};
+
 //Public booking page (no login)
 export const usePublicBooking = (slug: string | undefined) => {
   return useQuery({
@@ -510,6 +636,24 @@ export const useCreatePublicBooking = () => {
   return useMutation({
     mutationFn: api.createPublicBooking,
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["publicSlots"] }),
+  });
+};
+
+// The upcoming sessions of a group class, with places left
+export const usePublicClassSessions = (slug: string | undefined, serviceId: string | null) => {
+  return useQuery({
+    queryKey: ["publicClassSessions", slug, serviceId],
+    queryFn: () => api.getPublicClassSessions({ slug: slug!, serviceId: serviceId! }),
+    enabled: !!slug && !!serviceId,
+  });
+};
+
+// Whether it works or not, the places have changed: load them again
+export const useBookPublicClass = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.bookPublicClass,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["publicClassSessions"] }),
   });
 };
 
@@ -623,17 +767,35 @@ const useAppointmentsMutation = <TVariables, TResult>(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    // Appointments also show in each patient's ficha
+    // Appointments also show in each patient's ficha, and in Cobros
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["appointments"] }),
         queryClient.invalidateQueries({ queryKey: ["patient"] }),
+        queryClient.invalidateQueries({ queryKey: ["charges"] }),
       ]),
   });
 };
 
 export const useCreateAppointment = () => useAppointmentsMutation(api.createAppointment);
 export const useUpdateAppointment = () => useAppointmentsMutation(api.updateAppointment);
+export const useLinkAppointmentPatient = () => useAppointmentsMutation(api.linkAppointmentPatient);
+export const useCreateSeries = () => useAppointmentsMutation(api.createSeries);
+export const useSetAttendance = () => useAppointmentsMutation(api.setAttendance);
+
+// Group classes (R3)
+export const useClasses = (activeClinicId: string | undefined) => {
+  return useQuery({
+    queryKey: ["appointments", "classes", activeClinicId],
+    queryFn: api.getClasses,
+    enabled: !!activeClinicId,
+  });
+};
+export const useCreateClass = () => useAppointmentsMutation(api.createClass);
+export const useAddClassMember = () => useAppointmentsMutation(api.addClassMember);
+export const useRemoveClassMember = () => useAppointmentsMutation(api.removeClassMember);
+export const useExtendClass = () => useAppointmentsMutation(api.extendClass);
+export const useUpdateSeries = () => useAppointmentsMutation(api.updateSeries);
 export const useDeleteAppointment = () => useAppointmentsMutation(api.deleteAppointment);
 
 //Pacientes of the active clinic (every clinic role)

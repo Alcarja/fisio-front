@@ -87,7 +87,7 @@ export default function BookingsPage() {
   const appointmentsFor = (day: Date) => {
     const iso = toIsoDate(day);
     return allAppointments.filter(
-      (a) => a.date === iso && (!physioId || a.physio.userId === physioId),
+      (a) => a.date === iso && (!physioId || a.physio?.userId === physioId),
     );
   };
 
@@ -100,7 +100,7 @@ export default function BookingsPage() {
   const visibleIsos = new Set(days.map(toIsoDate));
   const withoutReminder = allAppointments.filter(
     (a) =>
-      visibleIsos.has(a.date) && (!physioId || a.physio.userId === physioId) && missesReminder(a),
+      visibleIsos.has(a.date) && (!physioId || a.physio?.userId === physioId) && missesReminder(a),
   ).length;
 
   const selected = allAppointments.find((a) => a.id === selectedId) ?? null;
@@ -226,7 +226,7 @@ export default function BookingsPage() {
           appointment={selected}
           config={settings}
           canDelete={canManage}
-          canEdit={canEditAll || selected.physio.userId === myId}
+          canEdit={canEditAll || selected.physio?.userId === myId}
           lockedPhysioId={lockedPhysioId}
           onClose={() => setSelectedId(null)}
         />

@@ -13,12 +13,16 @@ export const paths = {
   adminAccount: "/admin/account",
   // Active clinic's appointments calendar: every clinic role
   adminBookings: "/admin/bookings",
+  // Group classes (weekly, with members): every clinic role sees them
+  adminClasses: "/admin/classes",
   // Active clinic's patients (fichas): every clinic role
   adminPatients: "/admin/patients",
   // Build real links with generatePath(paths.adminPatient, { patientId })
   adminPatient: "/admin/patients/:patientId",
   // The exercise bank and the tablas: owners, admins and physios
   adminExercises: "/admin/exercises",
+  // Cobros y bonos: owners, admins and reception, "invoicing" feature
+  adminCharges: "/admin/charges",
   // Active clinic's team: owners and admins only
   adminTeam: "/admin/team",
   // Monthly report of the active clinic's appointments: owners and admins only
@@ -34,6 +38,8 @@ export const paths = {
   adminSettingsOnlineBooking: "/admin/settings/online-booking",
   // Only in clinics with the "reminders" feature
   adminSettingsReminders: "/admin/settings/reminders",
+  // Only in clinics with the "invoicing" feature (Cobros y bonos)
+  adminSettingsCharges: "/admin/settings/charges",
   // Superadmin only
   adminClinics: "/admin/clinics",
   // Superadmin only: requests sent from the website's contact form

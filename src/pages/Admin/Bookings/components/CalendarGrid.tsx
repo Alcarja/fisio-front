@@ -288,7 +288,7 @@ function OverflowButton({ items, onSelect }: { items: Appointment[]; onSelect: (
                     {bookingTitle(a)}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {a.startTime}–{a.endTime} · {a.physio.name} · {a.room.name}
+                    {a.startTime}–{a.endTime} · {a.physio?.name ?? "Sin fisio"} · {a.room.name}
                   </span>
                 </span>
               </button>

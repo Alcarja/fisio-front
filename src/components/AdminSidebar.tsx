@@ -13,6 +13,7 @@ import {
   Settings,
   UserRound,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useContactRequests, useMe } from "@/adapters/hook";
@@ -20,6 +21,7 @@ import ClinicSwitcher from "@/components/ClinicSwitcher";
 import { paths } from "@/routes/paths";
 import {
   bookingsAccess,
+  chargesAccess,
   clinicalAccess,
   hasAccess,
   patientsAccess,
@@ -74,7 +76,9 @@ const sections: SidebarSection[] = [
     access: bookingsAccess,
     items: [
       { label: "Reservas", icon: CalendarDays, to: paths.adminBookings },
+      { label: "Clases", icon: Users, to: paths.adminClasses },
       { label: "Pacientes", icon: BookUser, to: paths.adminPatients, access: patientsAccess },
+      { label: "Cobros", icon: Wallet, to: paths.adminCharges, access: chargesAccess },
       { label: "Ejercicios", icon: Dumbbell, to: paths.adminExercises, access: clinicalAccess },
     ],
   },

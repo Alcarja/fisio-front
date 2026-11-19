@@ -46,6 +46,18 @@ export const websiteAccess: AccessRule = {
   feature: "website",
 };
 
+// Cobros y bonos: owners, admins and reception record payments and sell bonos
+export const chargesAccess: AccessRule = {
+  clinic: ["owner", "admin", "receptionist"],
+  feature: "invoicing",
+};
+
+// Its settings (Configuración → Cobros) and income reports: owners and admins
+export const chargesManagerAccess: AccessRule = {
+  clinic: ["owner", "admin"],
+  feature: "invoicing",
+};
+
 export const clinicalAccess: AccessRule = {
   clinic: ["owner", "admin", "physio"],
   feature: "clinical_history",
