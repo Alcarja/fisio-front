@@ -2233,6 +2233,56 @@ export const extendClass = async ({
 }): Promise<{ created: string[]; skipped: { date: string; message: string }[] }> =>
   stpApi.post(`/api/clinic/calendar/classes/${classId}/extend`, { endsOn });
 
+// Editing or deleting a class from tomorrow on (preview first)
+export type ClassEditChanges = Partial<{
+  serviceId: string;
+  roomId: string;
+  physioId: string | null;
+  startTime: string;
+  weekdays: number[];
+  endsOn: string;
+}>;
+
+export type ClassEditBody = { delete: true } | { changes: ClassEditChanges };
+
+export type ClassEditSession = {
+  date: string;
+  appointmentId: string | null;
+  status: string | null;
+  // keep: nothing changes (or it was changed by hand) · update: new time,
+  // room, physio or service · cancel · create: a new day
+  action: "keep" | "update" | "cancel" | "create";
+  fromTime: string;
+  startTime: string;
+  ok: boolean; // false: can't be changed that day (message says why)
+  message: string | null;
+  patients: number;
+  charged: number; // payments or bono sessions on it
+  detached: boolean;
+};
+
+export type ClassEditPreview = {
+  today: string;
+  cutoff: string; // the first day that changes (tomorrow)
+  sessions: ClassEditSession[];
+  summary: { keep: number; update: number; cancel: number; create: number; skipped: number; charged: number };
+  people: { withEmail: number; withoutEmail: number };
+};
+
+export const previewClassEdit = async ({ classId, ...body }: { classId: string } & ClassEditBody): Promise<ClassEditPreview> =>
+  stpApi.post(`/api/clinic/calendar/classes/${classId}/edit/preview`, body);
+
+export const applyClassEdit = async ({
+  classId,
+  ...body
+}: { classId: string; notify?: boolean; message?: string; reason?: string } & ClassEditBody): Promise<{
+  updated: string[];
+  created: string[];
+  cancelled: string[];
+  skipped: { date: string; message: string }[];
+  emailed: number;
+}> => stpApi.post(`/api/clinic/calendar/classes/${classId}/edit`, body);
+
 // Weekly series (R1–R2)
 export type SeriesInput = Omit<NewAppointment, "date" | "status" | "notes"> & {
   weekdays: number[]; // 1 = Monday … 7 = Sunday

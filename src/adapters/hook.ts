@@ -795,6 +795,7 @@ export const useCreateClass = () => useAppointmentsMutation(api.createClass);
 export const useAddClassMember = () => useAppointmentsMutation(api.addClassMember);
 export const useRemoveClassMember = () => useAppointmentsMutation(api.removeClassMember);
 export const useExtendClass = () => useAppointmentsMutation(api.extendClass);
+export const useApplyClassEdit = () => useAppointmentsMutation(api.applyClassEdit);
 export const useUpdateSeries = () => useAppointmentsMutation(api.updateSeries);
 export const useDeleteAppointment = () => useAppointmentsMutation(api.deleteAppointment);
 

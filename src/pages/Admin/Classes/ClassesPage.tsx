@@ -6,7 +6,9 @@ import {
   CircleX,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Plus,
+  Trash2,
   TriangleAlert,
   UserPlus,
   Users,
@@ -52,36 +54,8 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { hasAccess, manageAllAppointmentsAccess } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import PatientFields from "../Bookings/components/PatientFields";
-
-const WEEKDAY_NAMES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"];
-const WEEKDAY_SHORT = ["L", "M", "X", "J", "V", "S", "D"];
-
-const today = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-const addDays = (iso: string, days: number) => {
-  const d = new Date(`${iso}T12:00:00`);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-const dayLabel = (iso: string) =>
-  new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short" })
-    .format(new Date(`${iso}T12:00:00`))
-    .replace(".", "");
-const shortDate = (iso: string) =>
-  new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", year: "numeric" })
-    .format(new Date(`${iso}T12:00:00`))
-    .replace(".", "");
-
-// "Martes y jueves"
-function weekdaysLabel(days: number[]) {
-  const names = days.map((d) => WEEKDAY_NAMES[d - 1]!);
-  const text = names.length > 1 ? `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}` : names[0]!;
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-const summary = (list: string[]) => list.map(dayLabel).join(", ");
+import { addDays, dayLabel, shortDate, summary, today, weekdaysLabel, WEEKDAY_SHORT } from "./classUtils";
+import { DeleteClassDialog, EditClassDialog } from "./components/EditClassDialog";
 
 // Clases: the clinic's group classes (a weekly series of a group service with
 // enrolled members). Everyone sees them; owners, admins and reception create
@@ -148,6 +122,8 @@ function ClassCard({ cls, config, canManage }: { cls: GroupClass; config?: Calen
   const [adding, setAdding] = useState(false);
   const [leaving, setLeaving] = useState<ClassMember | null>(null);
   const [extending, setExtending] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const updateSeries = useUpdateSeries();
   const free = cls.places - cls.members.length;
 
@@ -190,6 +166,21 @@ function ClassCard({ cls, config, canManage }: { cls: GroupClass; config?: Calen
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => setExtending(true)}>
               <CalendarPlus /> Ampliar
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="size-8 rounded-full" aria-label={`Más opciones de ${cls.service.name}`}>
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setEditing(true)} disabled={!config}>
+                  <Pencil /> Editar clase
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(true)}>
+                  <Trash2 /> Eliminar clase
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -260,6 +251,8 @@ function ClassCard({ cls, config, canManage }: { cls: GroupClass; config?: Calen
 
       <LeaveDialog cls={cls} member={leaving} onClose={() => setLeaving(null)} />
       {extending && <ExtendDialog cls={cls} onClose={() => setExtending(false)} />}
+      {editing && config && <EditClassDialog cls={cls} config={config} onClose={() => setEditing(false)} />}
+      {deleting && <DeleteClassDialog cls={cls} onClose={() => setDeleting(false)} />}
     </section>
   );
 }
