@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, MessageSquarePlus, Plus, Search, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, MessageSquarePlus, Plus, Search, X, CirclePlay } from "lucide-react";
 import type { BodyRegion, Exercise, ExerciseType } from "@/adapters/api";
 import { useExercises, useMe } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { cn } from "@/lib/utils";
 import { bodyRegionLabels } from "../../Patients/clinicalFormat";
 import { editorItemFromExercise, type EditorItem } from "../editorItems";
-import { doseText, exerciseTypeLabels, plain } from "../exerciseFormat";
+import { doseText, exerciseTypeLabels, looksLikeYoutube, plain } from "../exerciseFormat";
 import DoseEditor from "./DoseEditor";
 import ExerciseThumb from "./ExerciseThumb";
 
@@ -107,6 +107,8 @@ function ItemCard({
   onRemove: () => void;
 }) {
   const [showNotes, setShowNotes] = useState(!!item.notes);
+  const [showVideo, setShowVideo] = useState(!!item.videoUrl);
+  const videoProblem = item.videoUrl.trim() && !looksLikeYoutube(item.videoUrl);
   return (
     <li
       className={cn(
@@ -144,7 +146,7 @@ function ItemCard({
         </div>
       </div>
       <DoseEditor value={item} onChange={onChange} />
-      {showNotes ? (
+      {showNotes && (
         <Input
           autoFocus={!item.notes}
           value={item.notes}
@@ -153,14 +155,48 @@ function ItemCard({
           onChange={(e) => onChange({ notes: e.target.value })}
           className="h-8 text-sm"
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowNotes(true)}
-          className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <MessageSquarePlus className="size-3.5" /> Añadir indicación
-        </button>
+      )}
+      {showVideo && (
+        <div className="flex flex-col gap-1">
+          <div className="relative">
+            <CirclePlay className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus={!item.videoUrl}
+              type="url"
+              inputMode="url"
+              value={item.videoUrl}
+              maxLength={300}
+              placeholder="Enlace de YouTube (youtube.com o youtu.be)"
+              aria-label={`Vídeo de YouTube de ${item.name}`}
+              aria-invalid={!!videoProblem}
+              onChange={(e) => onChange({ videoUrl: e.target.value })}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          {videoProblem && <p className="text-xs text-destructive">Tiene que ser un enlace de YouTube.</p>}
+        </div>
+      )}
+      {(!showNotes || !showVideo) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {!showNotes && (
+            <button
+              type="button"
+              onClick={() => setShowNotes(true)}
+              className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <MessageSquarePlus className="size-3.5" /> Añadir indicación
+            </button>
+          )}
+          {!showVideo && (
+            <button
+              type="button"
+              onClick={() => setShowVideo(true)}
+              className="flex w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <CirclePlay className="size-3.5" /> Añadir vídeo de YouTube
+            </button>
+          )}
+        </div>
       )}
     </li>
   );

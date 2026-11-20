@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useSearchParams } from "react-router";
-import { CircleAlert, Loader2, Printer, Repeat, Timer, TriangleAlert } from "lucide-react";
+import { CircleAlert, ExternalLink, Loader2, Printer, Repeat, Timer, TriangleAlert, CirclePlay } from "lucide-react";
 import { publicExercisesPath } from "@/adapters/api";
 import { usePublicProgram } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,19 @@ export default function PublicExercisesPage() {
                 ))}
             </ol>
 
+            {item.videoUrl && (
+              <a
+                href={item.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors hover:bg-secondary print:hidden"
+              >
+                <CirclePlay className="size-4" /> Ver vídeo en YouTube <ExternalLink className="size-3.5 text-muted-foreground" />
+              </a>
+            )}
+            {item.videoUrl && (
+              <p className="hidden text-xs break-all text-muted-foreground print:block">Vídeo: {item.videoUrl}</p>
+            )}
             {item.notes && (
               <p className="rounded-xl bg-secondary px-3 py-2 text-sm">
                 <strong className="font-medium">Para ti:</strong> {item.notes}

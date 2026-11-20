@@ -44,6 +44,7 @@ export const itemFromExercise = (e: Exercise): ListItemInput => ({
   restSeconds: e.defaultRestSeconds,
   perSide: e.perSide,
   notes: null,
+  videoUrl: e.videoUrl,
 });
 
 // Lowercase and without accents, so "rodilla" finds "Rodilla" and "gluteo" "glúteo"
@@ -68,3 +69,7 @@ export async function compressImage(file: File): Promise<Blob> {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo leer la imagen"))), "image/jpeg", 0.82),
   );
 }
+
+// A quick check of a YouTube link while typing (the server checks it properly)
+export const looksLikeYoutube = (value: string) =>
+  /^(https?:\/\/)?((www|m)\.)?(youtube\.com\/(watch\?|shorts\/|embed\/|live\/)|youtu\.be\/)\S+$/i.test(value.trim());

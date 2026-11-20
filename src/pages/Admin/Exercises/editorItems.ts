@@ -15,13 +15,18 @@ export type EditorItem = {
   rest: string;
   perSide: boolean;
   notes: string;
+  // YouTube link the patient sees ("" = none)
+  videoUrl: string;
 };
 
 const str = (n: number | null) => (n === null ? "" : String(n));
 const num = (s: string) => (s.trim() === "" ? null : Number(s));
 let counter = 0;
 
-export const toEditorItem = (item: Dose & { exerciseId: string; notes: string | null }, name: string): EditorItem => ({
+export const toEditorItem = (
+  item: Dose & { exerciseId: string; notes: string | null; videoUrl?: string | null },
+  name: string,
+): EditorItem => ({
   key: `item-${++counter}`,
   exerciseId: item.exerciseId,
   name,
@@ -32,6 +37,7 @@ export const toEditorItem = (item: Dose & { exerciseId: string; notes: string | 
   rest: str(item.restSeconds),
   perSide: item.perSide,
   notes: item.notes ?? "",
+  videoUrl: item.videoUrl ?? "",
 });
 
 export const fromEditorItem = (item: EditorItem): ListItemInput => ({
@@ -42,6 +48,7 @@ export const fromEditorItem = (item: EditorItem): ListItemInput => ({
   restSeconds: num(item.rest),
   perSide: item.perSide,
   notes: item.notes.trim() || null,
+  videoUrl: item.videoUrl.trim() || null,
 });
 
 export const editorItemFromExercise = (e: Exercise): EditorItem =>
@@ -54,6 +61,7 @@ export const editorItemFromExercise = (e: Exercise): EditorItem =>
       restSeconds: e.defaultRestSeconds,
       perSide: e.perSide,
       notes: null,
+      videoUrl: e.videoUrl,
     },
     e.name,
   );

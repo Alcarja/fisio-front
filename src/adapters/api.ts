@@ -767,6 +767,7 @@ export type Exercise = {
   equipment: Equipment[];
   instructions: string; // one step per line
   precautions: string | null;
+  videoUrl: string | null; // YouTube link (only the link, never embedded)
   defaultSets: number | null;
   defaultReps: number | null;
   defaultSeconds: number | null;
@@ -782,7 +783,8 @@ export type Exercise = {
 export type ExerciseInput = Omit<Exercise, "id" | "isBase" | "hasImage" | "archived" | "updatedAt">;
 
 // One exercise of a tabla or a program, with its dose
-export type ListItemInput = Dose & { exerciseId: string; notes: string | null };
+// videoUrl: its own YouTube link (copied from the bank when it's added)
+export type ListItemInput = Dose & { exerciseId: string; notes: string | null; videoUrl: string | null };
 
 export type ExerciseTemplate = {
   id: string;
@@ -856,6 +858,7 @@ export type ProgramItem = Dose & {
   instructions: string;
   precautions: string | null;
   notes: string | null;
+  videoUrl: string | null;
   hasImage: boolean;
   imageVersion: string | null;
 };

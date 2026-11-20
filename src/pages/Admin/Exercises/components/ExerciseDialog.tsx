@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Archive, Copy, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { Archive, CirclePlay, Copy, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { BodyRegion, Equipment, Exercise, ExerciseInput, ExerciseType } from "@/adapters/api";
 import {
@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { bodyRegionLabels } from "../../Patients/clinicalFormat";
 import { doseFromDraft, draftFromExercise, type DoseDraft } from "../editorItems";
-import { compressImage, doseText, equipmentLabels, exerciseTypeLabels } from "../exerciseFormat";
+import { compressImage, doseText, equipmentLabels, exerciseTypeLabels, looksLikeYoutube } from "../exerciseFormat";
 import DoseEditor from "./DoseEditor";
 import ExerciseThumb from "./ExerciseThumb";
 
@@ -50,6 +50,7 @@ export default function ExerciseDialog({ exercise, onClose, onDuplicated }: Prop
     equipment: exercise?.equipment.filter((e) => e !== "none") ?? ([] as Equipment[]),
     instructions: exercise?.instructions ?? "",
     precautions: exercise?.precautions ?? "",
+    videoUrl: exercise?.videoUrl ?? "",
   }));
   const [dose, setDose] = useState<DoseDraft>(() => draftFromExercise(exercise));
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -76,6 +77,7 @@ export default function ExerciseDialog({ exercise, onClose, onDuplicated }: Prop
       equipment: form.equipment.length ? form.equipment : ["none"],
       instructions: form.instructions.trim(),
       precautions: form.precautions.trim() || null,
+      videoUrl: form.videoUrl.trim() || null,
       ...doseFromDraft(dose),
     };
     const callbacks = {
@@ -192,6 +194,24 @@ export default function ExerciseDialog({ exercise, onClose, onDuplicated }: Prop
                 />
               </Field>
 
+              <Field id="ex-video" label="Vídeo de YouTube (opcional)">
+                <Input
+                  id="ex-video"
+                  type="url"
+                  inputMode="url"
+                  maxLength={300}
+                  placeholder="https://youtu.be/…"
+                  value={form.videoUrl}
+                  aria-invalid={!!form.videoUrl.trim() && !looksLikeYoutube(form.videoUrl)}
+                  onChange={(e) => set("videoUrl", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {form.videoUrl.trim() && !looksLikeYoutube(form.videoUrl)
+                    ? "Tiene que ser un enlace de YouTube (youtube.com o youtu.be)."
+                    : "Solo el enlace: el paciente lo abre en YouTube. Se copia al pautarlo y se puede cambiar en cada paciente."}
+                </p>
+              </Field>
+
               <Field label="Dosis por defecto">
                 <DoseEditor value={dose} onChange={(change) => setDose((d) => ({ ...d, ...change }))} />
                 <p className="text-xs text-muted-foreground">La que se propone al añadirlo. Se ajusta en cada paciente.</p>
@@ -290,6 +310,11 @@ function ReadOnlyView({ exercise }: { exercise: Exercise }) {
         <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-amber-800 dark:text-amber-300">
           {exercise.precautions}
         </p>
+      )}
+      {exercise.videoUrl && (
+        <a href={exercise.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-1.5 font-medium underline underline-offset-4">
+          <CirclePlay className="size-4" /> Ver vídeo en YouTube
+        </a>
       )}
       <p className="text-muted-foreground">
         Dosis por defecto:{" "}

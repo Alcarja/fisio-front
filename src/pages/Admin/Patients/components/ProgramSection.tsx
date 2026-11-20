@@ -156,6 +156,11 @@ function ProgramItems({ patientId, program }: { patientId: string; program: Exer
               {doseText(item, false)}
               {item.notes && ` · ${item.notes}`}
             </span>
+            {item.videoUrl && (
+              <a href={item.videoUrl} target="_blank" rel="noopener noreferrer" className="w-fit text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                Vídeo de YouTube
+              </a>
+            )}
           </div>
         </li>
       ))}
