@@ -282,6 +282,21 @@ export type ClinicBilling = {
   // The selected month: when it was marked as paid (null = pending)
   payment: { paidAt: string; recordedByName: string | null } | null;
   paidMonths: string[]; // paid months among the last 12 (selected one included)
+  // Its plan and price (back/src/lib/plans.ts). planName null = no plan yet
+  contract: {
+    planName: string | null;
+    cycle: BillingCycle;
+    monthlyCents: number; // a month (annual: the year ÷ 12)
+    periodCents: number; // each payment: the month, or the year
+    mismatches: number; // features contracted but off, or on but not contracted
+  } | null;
+  // Each month of the history: what was charged (saved when marked paid) or
+  // what it should be (the contract with the professionals of the 1st).
+  // null = no plan, unknown
+  amounts: Record<string, number | null>;
+  professionals: Record<string, number>; // counted on the 1st (or fixed by hand)
+  // Its professionals changed this month: what it pays from next month
+  upcoming: { month: string; monthlyCents: number; professionals: number } | null;
 };
 
 export type BillingMonth = {
@@ -311,6 +326,146 @@ export const setBillingExempt = async ({
 }): Promise<void> => {
   await stpApi.put(`${billingPath(clinicId)}/exempt`, { exempt });
 };
+
+// Planes (superadmin only): plans, prices and each clinic's contract.
+// Mirrors back/src/lib/plans.ts. All prices are monthly, in cents, before IVA
+export type BillingCycle = "monthly" | "annual";
+export type PriceTier = { upTo: number; cents: number }; // up to N professionals
+
+export type Plan = {
+  id: string;
+  name: string;
+  description: string | null;
+  position: number;
+  priceTiers: PriceTier[];
+  extraProfessionalCents: number; // each professional over the last tier
+  annualMonths: number; // months charged for 12 when paying the year
+  archived: boolean;
+  features: ClinicFeature[];
+};
+export type PlanInput = Omit<Plan, "id">;
+
+export type PlansData = {
+  plans: Plan[];
+  featurePrices: { feature: ClinicFeature; monthlyCents: number | null }[]; // as an extra
+  clinicsByPlan: Record<string, number>;
+};
+
+export const getPlans = async (): Promise<PlansData> => stpApi.get("/api/admin/plans");
+export const createPlan = async (data: PlanInput): Promise<{ planId: string }> =>
+  stpApi.post("/api/admin/plans", data);
+export const updatePlan = async ({ id, data }: { id: string; data: PlanInput }): Promise<void> => {
+  await stpApi.put(`/api/admin/plans/${encodeURIComponent(id)}`, data);
+};
+export const deletePlan = async (id: string): Promise<void> => {
+  await stpApi.delete(`/api/admin/plans/${encodeURIComponent(id)}`);
+};
+export const setFeaturePrice = async ({
+  feature,
+  monthlyCents,
+}: {
+  feature: ClinicFeature;
+  monthlyCents: number | null;
+}): Promise<void> => {
+  await stpApi.put(`/api/admin/plans/feature-prices/${feature}`, { monthlyCents });
+};
+
+export type ContractQuote = {
+  planCents: number;
+  planFromOverride: boolean;
+  addons: { feature: ClinicFeature; cents: number; custom: boolean; missingPrice: boolean }[];
+  subtotalCents: number;
+  discountCents: number;
+  monthlyCents: number;
+  cycle: BillingCycle;
+  annualMonths: number;
+  periodCents: number;
+};
+
+export type ClinicContract = {
+  clinicId: string;
+  plan: { id: string; name: string; archived: boolean } | null;
+  cycle: BillingCycle;
+  exempt: boolean;
+  professionalsCounted: number; // owners, admins and physios (not reception)
+  professionalsOverride: number | null;
+  professionals: number; // the ones that count for the price
+  discountPercent: number;
+  discountNote: string | null;
+  priceOverrideCents: number | null;
+  notes: string | null;
+  addons: { feature: ClinicFeature; priceCents: number | null }[];
+  features: { feature: ClinicFeature; contracted: "plan" | "addon" | null; active: boolean }[];
+  quote: ContractQuote;
+};
+
+export type ContractInput = {
+  planId: string | null;
+  cycle: BillingCycle;
+  professionalsOverride: number | null;
+  discountPercent: number;
+  discountNote: string | null;
+  priceOverrideCents: number | null;
+  notes: string | null;
+  addons: { feature: ClinicFeature; priceCents: number | null }[];
+};
+
+// Every clinic with its contract (Plataforma → Contratos)
+// Changes in a clinic's professionals (back: clinic_professional_log), and
+// what the super-admin should look at
+export type ProfessionalChange = {
+  id: string;
+  changedAt: string;
+  previousCount: number;
+  newCount: number;
+  tierChanged: boolean; // the price moved with it
+  fromCents: number | null;
+  toCents: number | null;
+  reviewed: boolean;
+};
+export type ProfessionalAlerts = {
+  unreviewed: number; // tier changes not reviewed yet
+  overrideBelow: boolean; // professionals fixed by hand below what it has
+  changes: ProfessionalChange[]; // newest first
+};
+
+export type ContractsOverview = {
+  clinics: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string | null;
+    createdAt: string;
+    contract: ClinicContract;
+    professionalAlerts: ProfessionalAlerts;
+  }[];
+};
+export const reviewProfessionalChanges = async (clinicId: string): Promise<void> => {
+  await stpApi.post(`${billingPath(clinicId)}/professionals/review`, {});
+};
+// Clinics that need a look (the menu badge)
+export const getPlanAlerts = async (): Promise<{ clinics: number }> => stpApi.get("/api/admin/plans/alerts");
+export const getContracts = async (): Promise<ContractsOverview> => stpApi.get("/api/admin/plans/contracts");
+
+export const getContract = async (
+  clinicId: string,
+): Promise<{ contract: ClinicContract; clinicalDocumentsReady: boolean; professionalAlerts: ProfessionalAlerts }> =>
+  stpApi.get(`${billingPath(clinicId)}/contract`);
+export const saveContract = async ({
+  clinicId,
+  data,
+}: {
+  clinicId: string;
+  data: ContractInput;
+}): Promise<ClinicContract> => {
+  const { contract } = await stpApi.put(`${billingPath(clinicId)}/contract`, data);
+  return contract;
+};
+// Switches on what's contracted and still off (never switches anything off)
+export const applyContract = async (
+  clinicId: string,
+): Promise<{ enabled: ClinicFeature[]; skipped: { feature: ClinicFeature; reason: string }[] }> =>
+  stpApi.post(`${billingPath(clinicId)}/contract/apply`, {});
 
 export type NewClinic = {
   name: string;
@@ -546,13 +701,37 @@ export type NewMember = {
   email: string;
   name?: string;
   role: Exclude<ClinicRole, "owner">;
+  // The clinic accepted a higher fee (after a PRICE_CHANGE refusal)
+  confirmPriceChange?: boolean;
+};
+
+// What adding, inviting, changing or removing a professional does to the
+// clinic's fee (back/src/lib/plans.ts priceImpact). The new price counts from
+// `fromMonth`. A raise must be confirmed: the request is refused with
+// code PRICE_CHANGE and this in error.data.priceChange
+export type PriceChange = {
+  changes: boolean;
+  increase: boolean;
+  planName: string | null;
+  cycle: BillingCycle;
+  fromProfessionals: number;
+  toProfessionals: number;
+  fromCents: number;
+  toCents: number;
+  fromMonth: string; // "2026-12"
+};
+
+export const priceChangeFrom = (error: unknown): PriceChange | null => {
+  const e = error as { code?: string; data?: { priceChange?: PriceChange } };
+  return e?.code === "PRICE_CHANGE" ? (e.data?.priceChange ?? null) : null;
 };
 
 // New email: the account is created and joins now (invited: false).
 // Existing account: they get an invitation to accept (invited: true)
-export type AddMemberResult =
+export type AddMemberResult = (
   | { invited: false; member: ClinicMember }
-  | { invited: true; invitation: ClinicInvitation };
+  | { invited: true; invitation: ClinicInvitation }
+) & { priceChange?: PriceChange | null };
 
 export const addMember = async (member: NewMember): Promise<AddMemberResult> => {
   return stpApi.post("/api/clinic/team/newMember", member);
@@ -564,21 +743,18 @@ const teamMemberPath = (memberId: string) =>
 export type TeamMemberRoleUpdate = {
   memberId: string;
   role: Exclude<ClinicRole, "owner">;
+  confirmPriceChange?: boolean;
 };
 
 export const updateTeamMemberRole = async ({
   memberId,
   role,
-}: TeamMemberRoleUpdate): Promise<ClinicMember> => {
-  const { member } = await stpApi.patch(`${teamMemberPath(memberId)}/role`, {
-    role,
-  });
-  return member;
-};
+  confirmPriceChange,
+}: TeamMemberRoleUpdate): Promise<{ member: ClinicMember; priceChange: PriceChange | null }> =>
+  stpApi.patch(`${teamMemberPath(memberId)}/role`, { role, confirmPriceChange });
 
-export const removeTeamMember = async (memberId: string): Promise<void> => {
-  await stpApi.delete(teamMemberPath(memberId));
-};
+export const removeTeamMember = async (memberId: string): Promise<{ priceChange: PriceChange | null }> =>
+  stpApi.delete(teamMemberPath(memberId));
 
 export type TeamMemberPasswordUpdate = {
   memberId: string;

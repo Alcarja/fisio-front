@@ -3,6 +3,7 @@ import { ArrowLeft, Building2, CircleAlert, Loader2 } from "lucide-react";
 import { useGetClinicById } from "@/adapters/hook";
 import { Badge } from "@/components/ui/badge";
 import { paths } from "@/routes/paths";
+import ClinicContract from "./components/ClinicContract";
 import ClinicDetailsForm from "./components/ClinicDetailsForm";
 import ClinicDocumentation from "./components/ClinicDocumentation";
 import ClinicFeatures from "./components/ClinicFeatures";
@@ -68,6 +69,7 @@ export default function ClinicDetailsPage() {
 
           {/* key: start the form fresh when switching clinics */}
           <ClinicDetailsForm key={clinic.id} clinic={clinic} />
+          <ClinicContract clinicId={clinic.id} />
           <ClinicFeatures clinicId={clinic.id} enabled={clinic.features} />
           <ClinicDocumentation clinicId={clinic.id} features={clinic.features} />
           {/* key changes when someone joins or leaves, so the role draft restarts */}

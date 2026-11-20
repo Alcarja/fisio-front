@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import type { NewMember } from "@/adapters/api";
+import { priceChangeFrom, type NewMember, type PriceChange } from "@/adapters/api";
 import { useAddMember } from "@/adapters/hook";
+import { PriceChangeNotice, priceChangeLine } from "../priceChange";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,8 @@ const empty = { email: "", name: "", role: "physio" as AssignableClinicRole };
 export default function AddMemberDialog() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  // The server asked to confirm a higher fee (a new professional)
+  const [priceChange, setPriceChange] = useState<PriceChange | null>(null);
   const addMember = useAddMember();
 
   const handleOpenChange = (next: boolean) => {
@@ -44,6 +47,7 @@ export default function AddMemberDialog() {
     setOpen(next);
     if (!next) {
       setForm(empty);
+      setPriceChange(null);
       addMember.reset();
     }
   };
@@ -54,6 +58,8 @@ export default function AddMemberDialog() {
       email: form.email.trim().toLowerCase(),
       ...(form.name.trim() && { name: form.name.trim() }),
       role: form.role,
+      // Sent again after seeing the new fee
+      ...(priceChange && { confirmPriceChange: true }),
     };
     addMember.mutate(member, {
       onSuccess: (result) => {
@@ -61,10 +67,21 @@ export default function AddMemberDialog() {
           result.invited
             ? `${member.email} ya tenía cuenta: le hemos enviado una invitación`
             : `${member.email} añadido al equipo`,
+          { description: result.priceChange ? priceChangeLine(result.priceChange) : undefined },
         );
         handleOpenChange(false);
       },
+      onError: (error) => {
+        const change = priceChangeFrom(error);
+        if (change) setPriceChange(change);
+        else toast.error("No se pudo añadir", { description: error.message });
+      },
     });
+  };
+  // Changing the form asks again (another role may not change the fee)
+  const update = (change: Partial<typeof form>) => {
+    setForm((f) => ({ ...f, ...change }));
+    setPriceChange(null);
   };
 
   return (
@@ -93,7 +110,7 @@ export default function AddMemberDialog() {
                 autoComplete="off"
                 placeholder="nombre@clinica.com"
                 value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) => update({ email: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
                 Si ya tiene cuenta en Kineflow, le enviaremos una invitación para que la acepte.
@@ -109,7 +126,7 @@ export default function AddMemberDialog() {
                 autoComplete="off"
                 placeholder="Nombre y apellidos"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => update({ name: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
                 Solo se usa si todavía no tiene cuenta.
@@ -121,9 +138,7 @@ export default function AddMemberDialog() {
               <NativeSelect
                 id="member-role"
                 value={form.role}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, role: e.target.value as AssignableClinicRole }))
-                }
+                onChange={(e) => update({ role: e.target.value as AssignableClinicRole })}
                 className="w-full"
               >
                 {assignableClinicRoles.map((role) => (
@@ -135,6 +150,8 @@ export default function AddMemberDialog() {
               <p className="text-xs text-muted-foreground">{roleHints[form.role]}</p>
             </div>
           </div>
+
+          {priceChange && <PriceChangeNotice change={priceChange} />}
 
           <DialogFooter>
             <DialogClose asChild>
@@ -152,6 +169,8 @@ export default function AddMemberDialog() {
                 <>
                   <Loader2 className="animate-spin" /> Añadiendo…
                 </>
+              ) : priceChange ? (
+                "Confirmar y añadir"
               ) : (
                 "Añadir"
               )}

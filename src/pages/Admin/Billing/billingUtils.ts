@@ -52,3 +52,25 @@ const order: Record<MonthState, number> = { pending: 0, paid: 1, exempt: 2, notY
 
 export const byAttention = (month: string) => (a: ClinicBilling, b: ClinicBilling) =>
   order[stateOf(a, month)] - order[stateOf(b, month)] || a.name.localeCompare(b.name, "es");
+
+// ---------- Amounts (from each clinic's current contract) ----------
+
+// What the clinic pays for one month: what was charged (saved when it was
+// marked paid) or what it should be (its contract with the professionals it
+// had on the 1st; annual contracts: their share of the month). null = no plan
+export const amountOf = (clinic: ClinicBilling, month: string) => clinic.amounts?.[month] ?? null;
+
+// Earlier months owed, and what they add up to (null if any is unknown)
+export function overdue(clinic: ClinicBilling, month: string) {
+  const months = unpaidBefore(clinic, month);
+  const amounts = months.map((m) => amountOf(clinic, m));
+  return { months, cents: amounts.some((a) => a === null) ? null : amounts.reduce<number>((n, a) => n + (a ?? 0), 0) };
+}
+
+// Every unpaid month in the history up to `month` (overdue + the month itself)
+export const allUnpaid = (clinic: ClinicBilling, month: string) =>
+  lastMonths(month).filter((m) => stateOf(clinic, m) === "pending");
+
+// Months that can be marked: from the clinic's first month up to this month
+export const canMark = (clinic: ClinicBilling, m: string, currentMonth: string) =>
+  m >= clinic.startMonth && m <= currentMonth && !clinic.exempt;

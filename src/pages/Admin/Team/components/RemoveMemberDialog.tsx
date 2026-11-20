@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { priceChangeLine } from "../priceChange";
 import type { ClinicMember } from "@/adapters/api";
 import { useRemoveTeamMember } from "@/adapters/hook";
 import { Button } from "@/components/ui/button";
@@ -30,9 +31,11 @@ export default function RemoveMemberDialog({ member, clinicName, open, onOpenCha
 
   const confirm = () =>
     remove.mutate(member.memberId, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         toast.success("Miembro eliminado", {
-          description: `${member.name} ya no forma parte de ${clinicName}.`,
+          description: `${member.name} ya no forma parte de ${clinicName}.${
+            result.priceChange ? ` ${priceChangeLine(result.priceChange)}` : ""
+          }`,
         });
         close(false);
       },

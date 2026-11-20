@@ -65,6 +65,9 @@ class StpApi {
     // `code` lets a page react to one specific error (e.g. "SLOT_TAKEN")
     throw Object.assign(new Error(message || "Error en la solicitud"), {
       code: typeof errorData?.error?.code === "string" ? errorData.error.code : undefined,
+      // The rest of the error, for the pages that use it (e.g. PRICE_CHANGE
+      // carries the price before and after)
+      data: typeof errorData?.error === "object" ? errorData.error : undefined,
     });
   }
 

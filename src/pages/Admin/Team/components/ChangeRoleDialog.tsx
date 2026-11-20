@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { ClinicMember } from "@/adapters/api";
+import { priceChangeFrom, type ClinicMember, type PriceChange } from "@/adapters/api";
 import { useUpdateTeamMemberRole } from "@/adapters/hook";
+import { PriceChangeNotice, priceChangeLine } from "../priceChange";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,27 +31,37 @@ type Props = {
 export default function ChangeRoleDialog({ member, open, onOpenChange }: Props) {
   const current = member.role as AssignableClinicRole;
   const [role, setRole] = useState<AssignableClinicRole>(current);
+  // The server asked to confirm a higher fee (reception -> a professional role)
+  const [priceChange, setPriceChange] = useState<PriceChange | null>(null);
   const update = useUpdateTeamMemberRole();
 
   const close = (next: boolean) => {
     if (!next && update.isPending) return;
     onOpenChange(next);
-    if (!next) setRole(current);
+    if (!next) {
+      setRole(current);
+      setPriceChange(null);
+    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     update.mutate(
-      { memberId: member.memberId, role },
+      { memberId: member.memberId, role, ...(priceChange && { confirmPriceChange: true }) },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           toast.success("Rol actualizado", {
-            description: `${member.name} ahora es ${clinicRoleLabels[role].toLowerCase()}.`,
+            description: `${member.name} ahora es ${clinicRoleLabels[role].toLowerCase()}.${
+              result.priceChange ? ` ${priceChangeLine(result.priceChange)}` : ""
+            }`,
           });
           close(false);
         },
-        onError: (error) =>
-          toast.error("No se pudo cambiar el rol", { description: error.message }),
+        onError: (error) => {
+          const change = priceChangeFrom(error);
+          if (change) setPriceChange(change);
+          else toast.error("No se pudo cambiar el rol", { description: error.message });
+        },
       },
     );
   };
@@ -72,7 +83,10 @@ export default function ChangeRoleDialog({ member, open, onOpenChange }: Props) 
             <NativeSelect
               id="change-role"
               value={role}
-              onChange={(e) => setRole(e.target.value as AssignableClinicRole)}
+              onChange={(e) => {
+                setRole(e.target.value as AssignableClinicRole);
+                setPriceChange(null);
+              }}
               className="w-full"
             >
               {assignableClinicRoles.map((r) => (
@@ -82,6 +96,8 @@ export default function ChangeRoleDialog({ member, open, onOpenChange }: Props) 
               ))}
             </NativeSelect>
           </div>
+
+          {priceChange && <PriceChangeNotice change={priceChange} />}
 
           <DialogFooter>
             <Button
@@ -99,7 +115,7 @@ export default function ChangeRoleDialog({ member, open, onOpenChange }: Props) 
               disabled={role === current || update.isPending}
             >
               {update.isPending && <Loader2 className="animate-spin" />}
-              Guardar
+              {priceChange ? "Confirmar y guardar" : "Guardar"}
             </Button>
           </DialogFooter>
         </form>

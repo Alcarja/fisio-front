@@ -34,8 +34,8 @@ import RemindersPage from "@/pages/Admin/Settings/Reminders/RemindersPage";
 import ChargesSettingsPage from "@/pages/Admin/Settings/Charges/ChargesSettingsPage";
 import ChargesPage from "@/pages/Admin/Charges/ChargesPage";
 import ClassesPage from "@/pages/Admin/Classes/ClassesPage";
+import SubscriptionsPage from "@/pages/Admin/Subscriptions/SubscriptionsPage";
 import ClinicsPage from "@/pages/Admin/Clinics/ClinicsPage";
-import BillingPage from "@/pages/Admin/Billing/BillingPage";
 import RequestsPage from "@/pages/Admin/Requests/RequestsPage";
 import ClinicDetailsPage from "@/pages/Admin/Clinics/[clinicId]/ClinicDetailsPage";
 import HomePage from "@/pages/Home/HomePage";
@@ -119,7 +119,10 @@ export const router = createBrowserRouter([
         children: [
           { path: paths.adminClinics, element: <ClinicsPage /> },
           { path: paths.adminClinic, element: <ClinicDetailsPage /> },
-          { path: paths.adminBilling, element: <BillingPage /> },
+          // Suscripciones: Contratos, Pagos and Planes as tabs
+          { path: paths.adminBilling, element: <SubscriptionsPage /> },
+          { path: paths.adminPlans, element: <Navigate to={`${paths.adminBilling}?tab=planes`} replace /> },
+          { path: paths.adminContracts, element: <Navigate to={paths.adminBilling} replace /> },
           { path: paths.adminRequests, element: <RequestsPage /> },
         ],
       },

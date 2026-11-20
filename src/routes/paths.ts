@@ -44,8 +44,12 @@ export const paths = {
   adminClinics: "/admin/clinics",
   // Superadmin only: requests sent from the website's contact form
   adminRequests: "/admin/requests",
-  // Superadmin only: which clinics have paid each month
+  // Superadmin only: Suscripciones, with tabs Contratos (default), Pagos
+  // (?tab=pagos) and Planes (?tab=planes)
   adminBilling: "/admin/billing",
+  // Old addresses of two of those tabs: they redirect there
+  adminPlans: "/admin/plans",
+  adminContracts: "/admin/contracts",
   // Build real links with generatePath(paths.adminClinic, { clinicId })
   adminClinic: "/admin/clinics/:clinicId",
   // Public: patients book their own appointment in a clinic (its link or QR).

@@ -16,7 +16,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { useContactRequests, useMe } from "@/adapters/hook";
+import { useContactRequests, useMe, usePlanAlerts } from "@/adapters/hook";
 import ClinicSwitcher from "@/components/ClinicSwitcher";
 import { paths } from "@/routes/paths";
 import {
@@ -88,7 +88,7 @@ const sections: SidebarSection[] = [
     access: superadminAccess,
     items: [
       { label: "Clínicas", icon: Building2, to: paths.adminClinics },
-      { label: "Pagos", icon: CreditCard, to: paths.adminBilling },
+      { label: "Suscripciones", icon: CreditCard, to: paths.adminBilling },
       { label: "Solicitudes", icon: Inbox, to: paths.adminRequests },
     ],
   },
@@ -177,7 +177,9 @@ export default function AdminSidebar() {
   const isSuperadmin = hasAccess(me, superadminAccess);
   const { data: requests } = useContactRequests(isSuperadmin);
   const pendingRequests = requests?.filter((r) => !r.handled).length ?? 0;
-  const badges: Record<string, number> = { [paths.adminRequests]: pendingRequests };
+  // Clinics whose team changed their fee and nobody has looked yet
+  const { data: planAlerts } = usePlanAlerts(isSuperadmin);
+  const badges: Record<string, number> = { [paths.adminRequests]: pendingRequests, [paths.adminBilling]: planAlerts?.clinics ?? 0 };
 
   const visibleSections = sections
     .filter((s) => !s.access || hasAccess(me, s.access))

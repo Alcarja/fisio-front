@@ -216,6 +216,17 @@ export const useSetPayment = () => {
   });
 };
 
+// Several months of one clinic at once (catching up on overdue months)
+export const useSetPayments = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clinicId, months, paid }: { clinicId: string; months: string[]; paid: boolean }) => {
+      for (const month of months) await api.setPayment({ clinicId, month, paid });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["billing"] }),
+  });
+};
+
 export const useSetBillingExempt = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -251,6 +262,81 @@ export const useUpdateClinic = () => {
 };
 
 // Optional features of a clinic (superadmin only)
+// Planes (superadmin): plans, extra prices and each clinic's contract
+export const usePlans = () => useQuery({ queryKey: ["plans"], queryFn: api.getPlans });
+
+// A change to plans or prices changes what every clinic owes
+const usePlansMutation = <TVars, TData>(fn: (vars: TVars) => Promise<TData>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["contract"] }),
+        queryClient.invalidateQueries({ queryKey: ["billing"] }),
+      ]),
+  });
+};
+export const useCreatePlan = () => usePlansMutation(api.createPlan);
+export const useUpdatePlan = () => usePlansMutation(api.updatePlan);
+export const useDeletePlan = () => usePlansMutation(api.deletePlan);
+export const useSetFeaturePrice = () => usePlansMutation(api.setFeaturePrice);
+
+// All the clinics' contracts (Contratos). Key under "contract", so changes to
+// plans and prices refresh it too
+export const useContracts = () => useQuery({ queryKey: ["contract", "all"], queryFn: api.getContracts });
+
+export const usePlanAlerts = (enabled: boolean) =>
+  useQuery({ queryKey: ["contract", "alerts"], queryFn: api.getPlanAlerts, enabled, refetchInterval: 5 * 60_000 });
+
+export const useReviewProfessionalChanges = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.reviewProfessionalChanges,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contract"] }),
+  });
+};
+
+export const useContract = (clinicId: string | undefined) =>
+  useQuery({
+    queryKey: ["contract", clinicId],
+    queryFn: () => api.getContract(clinicId!),
+    enabled: !!clinicId,
+  });
+
+export const useSaveContract = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.saveContract,
+    onSuccess: (contract, { clinicId }) => {
+      queryClient.setQueryData<Awaited<ReturnType<typeof api.getContract>>>(["contract", clinicId], (old) =>
+        old ? { ...old, contract } : old,
+      );
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["billing"] }),
+        queryClient.invalidateQueries({ queryKey: ["plans"] }),
+        queryClient.invalidateQueries({ queryKey: ["contract", "all"] }),
+      ]);
+    },
+  });
+};
+
+export const useApplyContract = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.applyContract,
+    onSuccess: (_r, clinicId) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["contract", clinicId] }),
+        queryClient.invalidateQueries({ queryKey: ["contract", "all"] }),
+        queryClient.invalidateQueries({ queryKey: ["clinic", clinicId] }),
+        queryClient.invalidateQueries({ queryKey: ["billing"] }),
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+      ]),
+  });
+};
+
 export const useSetClinicFeature = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -259,8 +345,14 @@ export const useSetClinicFeature = () => {
       queryClient.setQueryData<api.ClinicDetails>(["clinic", clinicId], (old) =>
         old ? { ...old, features } : old,
       );
-      // The superadmin may be working in this clinic: /me lists its features
-      return queryClient.invalidateQueries({ queryKey: ["me"] });
+      // The superadmin may be working in this clinic: /me lists its features.
+      // Contracted vs active (Plan y precio, Pagos) changes too
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+        queryClient.invalidateQueries({ queryKey: ["contract", clinicId] }),
+        queryClient.invalidateQueries({ queryKey: ["contract", "all"] }),
+        queryClient.invalidateQueries({ queryKey: ["billing"] }),
+      ]);
     },
   });
 };
